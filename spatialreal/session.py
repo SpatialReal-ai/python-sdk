@@ -505,7 +505,10 @@ def _transport_error(exc: Exception, *, phase: str, action: str, req_id: str | N
 
 
 def _server_error(err, *, phase: str) -> AvatarSDKError:
-    close_code = err.code if err.code else None
+    # ServerError.code carries a WS close code (4000-4999) for session-fate
+    # errors, but relayed upstream failures use gRPC codes — only the close-code
+    # range participates in the retryability contract.
+    close_code = err.code if err.code and 4000 <= err.code <= 4999 else None
     return AvatarSDKError(
         code=error_code_for_close_code(close_code) if close_code else AvatarSDKErrorCode.serverError,
         message=f"Server error (code={err.code}): {err.message}" if err.message else f"Server error (code={err.code})",

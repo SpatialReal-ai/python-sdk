@@ -371,3 +371,28 @@ async def test_query_auth_mode_puts_credentials_in_url():
         # a successful handshake — the fake accepts either, so assert absence)
         assert "x-app-id" not in backend.ws_headers
         await session.close()
+
+
+async def test_server_error_with_grpc_code_is_not_a_close_code():
+    errors = []
+
+    async def script(backend, ws):
+        m = message_pb2.Message()
+        m.type = message_pb2.MESSAGE_SERVER_ERROR
+        m.server_error.code = 14  # gRPC Unavailable relayed from an upstream
+        m.server_error.message = "inference server Animate failed"
+        await ws.send(m.SerializeToString())
+        await asyncio.sleep(0.2)
+
+    async with FakeBackend() as backend:
+        backend.script = script
+        session = make_session(backend, on_error=errors.append)
+        await session.init()
+        await session.start()
+        await asyncio.sleep(0.3)
+        await session.close()
+
+    err = errors[0]
+    assert err.close_code is None, "gRPC codes must not enter the close-code contract"
+    assert err.code == AvatarSDKErrorCode.serverError
+    assert err.server_code == "14"
