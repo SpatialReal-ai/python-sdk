@@ -5,6 +5,11 @@
 # which shared-proto commit it came from. To pick up protocol changes: copy the new
 # driveningress/v2/driveningress.proto from shared-proto, update SHARED_PROTO_COMMIT,
 # then run this script (needs the dev extra: pip install -e ".[dev]").
+#
+# grpcio-tools is pinned: its bundled protoc decides the GENCODE version, and the
+# protobuf runtime everywhere the SDK is installed (livekit-agents venvs run 6.x)
+# must be >= that gencode. Bumping grpcio-tools past a protobuf major without
+# raising the runtime floor breaks every consumer at import time.
 set -eu
 cd "$(dirname "$0")/.."
 

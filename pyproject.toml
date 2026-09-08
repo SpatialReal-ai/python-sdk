@@ -23,12 +23,12 @@ classifiers = [
 dependencies = [
     "aiohttp>=3.9",
     "websockets>=12",
-    "protobuf>=4.25",
+    "protobuf>=6.31,<8",
     "nanoid>=2.0",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-asyncio", "grpcio-tools>=1.62", "ruff"]
+dev = ["pytest", "pytest-asyncio", "grpcio-tools==1.75.1", "ruff"]
 
 [project.urls]
 Documentation = "https://docs.spatialreal.com"

@@ -148,7 +148,7 @@ class ClientAudioInput(_message.Message):
     req_id: str
     end: bool
     audio: bytes
-    def __init__(self, req_id: _Optional[str] = ..., end: _Optional[bool] = ..., audio: _Optional[bytes] = ...) -> None: ...
+    def __init__(self, req_id: _Optional[str] = ..., end: bool = ..., audio: _Optional[bytes] = ...) -> None: ...
 
 class ServerError(_message.Message):
     __slots__ = ("connection_id", "req_id", "code", "message")
@@ -198,7 +198,7 @@ class ServerResponseAnimation(_message.Message):
     end: bool
     animation: FlameAnimation
     avatar_id: str
-    def __init__(self, connection_id: _Optional[str] = ..., req_id: _Optional[str] = ..., end: _Optional[bool] = ..., animation: _Optional[_Union[FlameAnimation, _Mapping]] = ..., avatar_id: _Optional[str] = ...) -> None: ...
+    def __init__(self, connection_id: _Optional[str] = ..., req_id: _Optional[str] = ..., end: bool = ..., animation: _Optional[_Union[FlameAnimation, _Mapping]] = ..., avatar_id: _Optional[str] = ...) -> None: ...
 
 class ClientInterrupt(_message.Message):
     __slots__ = ("req_id",)
