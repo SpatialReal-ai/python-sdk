@@ -1,0 +1,201 @@
+// driveningress.v2 — the user <-> driven-server realtime session protocol.
+// Kept as the production contract; asset-serving RPCs were removed (avatars are now
+// inlined per request by the backend; see inferenceserver/v1 for the inference contract).
+
+syntax = "proto3";
+
+package driveningress.v2;
+
+import "google/protobuf/struct.proto";
+
+option go_package = "github.com/SpatialReal-ai/backend-ng/api/generated/driveningress/v2";
+
+enum MessageType {
+  MESSAGE_UNSPECIFIED = 0;
+  MESSAGE_CLIENT_CONFIGURE_SESSION = 1; // 协商会话参数
+  MESSAGE_SERVER_CONFIRM_SESSION = 2; // 确认协商成功
+  MESSAGE_CLIENT_AUDIO_INPUT = 3;
+  MESSAGE_SERVER_ERROR = 4;
+  MESSAGE_SERVER_RESPONSE_ANIMATION = 5;
+  MESSAGE_CLIENT_DRIVEN_CONFIG = 6; // 驱动配置消息
+  MESSAGE_CLIENT_INTERRUPT = 7; // 打断
+}
+
+enum AudioFormat {
+  AUDIO_FORMAT_PCM_S16LE = 0;
+  AUDIO_FORMAT_OGG_OPUS = 1;
+}
+
+enum TransportCompression {
+  TRANSPORT_COMPRESSION_NONE = 0;
+}
+
+// EgressType specifies how animation and audio data should be delivered
+enum EgressType {
+  EGRESS_TYPE_UNSPECIFIED = 0; // Default: return animation data via WebSocket
+  EGRESS_TYPE_LIVEKIT = 1;     // Stream to LiveKit room via egress service
+  EGRESS_TYPE_AGORA = 2;       // Stream to Agora channel via egress service
+}
+
+// CloseCode is the WebSocket close code the server sends when it ends a session, and
+// the value carried in ServerError.code.
+//
+// These are a client contract, not diagnostics: the SDK branches on them to decide
+// whether to reconnect. Picking the wrong one is a behavioural bug, not a wording one —
+// a retryable failure reported as CLOSE_CODE_AUTH_FAILED makes the client give up for good.
+//
+// Ranges: 40xx means the request itself is at fault and retrying changes nothing;
+// 45xx means the server is briefly unable and the client should retry.
+enum CloseCode {
+  CLOSE_CODE_UNSPECIFIED = 0;
+
+  // Out of credits. Do not reconnect — retrying cannot succeed until the account is topped up.
+  CLOSE_CODE_CREDITS_EXHAUSTED = 4001;
+
+  // Session hit its maximum duration. Reconnect is allowed and expected.
+  CLOSE_CODE_SESSION_TIMEOUT = 4002;
+
+  // Too many concurrent connections for the plan. Do not reconnect immediately; a slot
+  // has to free up first.
+  CLOSE_CODE_CONCURRENCY_LIMIT = 4003;
+
+  // Bad or expired session token, or app_id mismatch. Do not reconnect — the client
+  // needs a fresh token first.
+  CLOSE_CODE_AUTH_FAILED = 4010;
+
+  // A server-side dependency is briefly unavailable: the control plane is rolling, a
+  // network blip, or it answered 5xx. **Reconnect, ideally with backoff.** Distinct from
+  // AUTH_FAILED precisely so that a few seconds of deploy does not read to the client as
+  // "your credentials are bad, stop trying".
+  CLOSE_CODE_UPSTREAM_UNAVAILABLE = 4503;
+}
+
+// LiveKitEgressConfig contains configuration for streaming to a LiveKit room
+message LiveKitEgressConfig {
+  // LiveKit server URL (e.g., wss://livekit.example.com)
+  string url = 1;
+  // LiveKit API key. Optional when api_token is provided.
+  string api_key = 2;
+  // LiveKit API secret. Optional when api_token is provided.
+  string api_secret = 3;
+  // LiveKit room name to join
+  string room_name = 4;
+  // Publisher identity in the room
+  string publisher_id = 5;
+  // Extra attributes
+  map<string, string> extra_attributes = 6;
+  // Idle timeout in seconds. Server closes the connection when it is completely silent.
+  int32 idle_timeout = 7;
+  // Pre-generated LiveKit access token. When set, backend should prefer this over api_key/api_secret.
+  string api_token = 8;
+}
+
+// AgoraEgressConfig contains configuration for streaming to an Agora channel
+message AgoraEgressConfig {
+  // Agora channel name to join
+  string channel_name = 1;
+  // Agora token for authentication (optional for testing)
+  string token = 2;
+  // Publisher UID in the channel (0 for auto-assign)
+  uint32 uid = 3;
+  // Publisher identity/name
+  string publisher_id = 4;
+}
+
+// DrivenIngressConfig contains driven server configuration
+message DrivenIngressConfig {
+  // Base64 encoded shape.npy data
+  bytes shape_npy = 1;
+
+  // Base64 encoded style.npy data
+  bytes style_npy = 2;
+
+  // Driven server URL
+  string driven_server_url = 3;
+
+  // Model settings JSON
+  google.protobuf.Struct model_settings = 4;
+
+  // Encoder start frame (default: 0)
+  int32 encoder_start_frame = 5;
+}
+
+message ClientConfigureSession {
+  int32 sample_rate = 1;
+  int32 bitrate = 2;
+  // AUDIO_FORMAT_PCM_S16LE sends raw PCM16 mono audio at sample_rate.
+  // AUDIO_FORMAT_OGG_OPUS sends one continuous Ogg Opus stream per req_id.
+  // The server decodes it to PCM internally before handing it to driven processing.
+  AudioFormat audio_format = 3;
+  TransportCompression transport_compression = 4;
+  // Egress configuration (optional)
+  // If egress_type is UNSPECIFIED or not set, animation data is returned via WebSocket
+  EgressType egress_type = 5;
+  // LiveKit egress configuration (required when egress_type is EGRESS_TYPE_LIVEKIT)
+  LiveKitEgressConfig livekit_egress = 6;
+  // Agora egress configuration (required when egress_type is EGRESS_TYPE_AGORA)
+  AgoraEgressConfig agora_egress = 7;
+}
+
+message ServerConfirmSession {
+  string connection_id = 1;
+}
+message ClientAudioInput {
+  string req_id = 1;
+  bool end = 2;
+  // For AUDIO_FORMAT_OGG_OPUS, audio carries a slice of the continuous Ogg stream.
+  // Each req_id must use a single logical stream spanning multiple messages.
+  // The final message for the req_id must set end=true.
+  bytes audio = 3;
+}
+
+message ServerError {
+  string connection_id = 1;
+  string req_id = 2;
+  int32 code = 3;
+  string message = 4;
+}
+
+message Flame {
+  repeated float translation = 1 [packed = true];
+  repeated float rotation = 2 [packed = true];
+  repeated float neck_pose = 3 [packed = true];
+  repeated float jaw_pose = 4 [packed = true];
+  repeated float eye_pose = 5 [packed = true];
+  repeated float eye_lid = 6 [packed = true];
+  repeated float expression = 7 [packed = true];
+}
+
+message FlameAnimation {
+  repeated Flame keyframes = 1;
+}
+
+message ServerResponseAnimation {
+  string connection_id = 1;
+  string req_id = 2;
+  bool end = 3;
+  FlameAnimation animation = 4;
+  string avatar_id = 5;
+}
+
+message ClientInterrupt {
+  string req_id = 1;
+}
+
+message Message {
+  MessageType type = 1;
+  oneof data {
+    ClientConfigureSession client_configure_session = 2;
+    ServerConfirmSession server_confirm_session = 3;
+    ClientAudioInput client_audio_input = 4;
+    ServerError server_error = 5;
+    ServerResponseAnimation server_response_animation = 6;
+    DrivenIngressConfig driven_config = 7;
+    ClientInterrupt client_interrupt = 8;
+  }
+}
+
+// PreviewAnimationRequest is the internal service-to-service payload used
+// by Console to drive a preview. Console authorizes the caller (JWT) and
+// resolves the avatar's shape/style/driven config before invoking this RPC,
+// so the method carries no user context and is not exposed via HTTP gateway.
