@@ -19,6 +19,13 @@ enum MessageType {
   MESSAGE_SERVER_RESPONSE_ANIMATION = 5;
   MESSAGE_CLIENT_DRIVEN_CONFIG = 6; // 驱动配置消息
   MESSAGE_CLIENT_INTERRUPT = 7; // 打断
+  // 服务端 pause / resume(仅 egress 模式;服务端在 ServerConfirmSession.capabilities 里声明 "playback_control")。
+  // 与 interrupt 的本质区别:不取消生成、不丢缓冲,恢复后从同一位置继续 —— 零空档、零误差、不重新生成。
+  MESSAGE_CLIENT_PAUSE = 8;
+  MESSAGE_CLIENT_RESUME = 9;
+  // 服务端播放状态回执(能力 "playback_state")。每条 CLIENT_PAUSE / CLIENT_RESUME 都必有一条回执;
+  // 播放被打断时也发一条 INTERRUPTED 带位置(客户反馈第 4 条)。老客户端对未知类型静默忽略。
+  MESSAGE_SERVER_PLAYBACK_STATE = 10;
 }
 
 enum AudioFormat {
@@ -139,6 +146,11 @@ message ClientConfigureSession {
 
 message ServerConfirmSession {
   string connection_id = 1;
+  // 服务端在本连接上支持的可选能力,SDK 据此决定走新路还是回退老路:
+  //   "playback_control" —— 接受 CLIENT_PAUSE / CLIENT_RESUME(egress 模式)
+  //   "playback_state"   —— 会发 SERVER_PLAYBACK_STATE 回执
+  // 没有该字段 / 为空 = 老服务端,SDK 保持 interrupt + 重发的回退路径。
+  repeated string capabilities = 2;
 }
 message ClientAudioInput {
   string req_id = 1;
@@ -182,6 +194,45 @@ message ClientInterrupt {
   string req_id = 1;
 }
 
+// 暂停当前 req_id 的播放。req_id 与服务端当前会话不匹配时被忽略,但仍会收到一条
+// SERVER_PLAYBACK_STATE 回执(内容是当前会话的真实状态,req_id 用请求里的那个)。
+// 暂停期间客户端应【照常继续发送音频,包括 end=true】—— 服务端只停写出、不停吸入。
+message ClientPause {
+  string req_id = 1;
+}
+
+// 从暂停点继续播放。未暂停时发 resume 是幂等的(回执 PLAYING)。
+message ClientResume {
+  string req_id = 1;
+}
+
+// 服务端播放状态回执。
+//
+// 每条 CLIENT_PAUSE / CLIENT_RESUME 都必有一条,内容是操作【之后】的真实状态:
+//   pause 被接受        → PAUSED + 位置
+//   pause 撞上刚播完    → ENDED + 总长(收到 ENDED 即视为此前的 pause 落空)
+//   req_id 不匹配当前会话 → 当前会话的真实状态,req_id 用请求里的那个
+//   resume 时并未暂停   → PLAYING + 位置
+// 另外播放被打断时服务端主动发一条 INTERRUPTED(reason 见下),暂停超时也走这条
+// (reason = "pause_timeout":客户端应按打断收尾,丢弃本地留存,不再尝试 resume)。
+// PLAYING / ENDED 也会随播放开始 / 播完主动发出,是 ServerResponseAnimation{end} 之外给新 SDK 的冗余,不替代它。
+message ServerPlaybackState {
+  string connection_id = 1;
+  string req_id = 2;
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    PLAYING = 1;
+    PAUSED = 2;
+    ENDED = 3;
+    INTERRUPTED = 4;
+  }
+  State state = 3;
+  // 已写出的内容毫秒数(不含过渡,暂停期间不推进)。
+  int64 played_ms = 4;
+  // INTERRUPTED 时:explicit | preempted | pause_timeout
+  string reason = 5;
+}
+
 message Message {
   MessageType type = 1;
   oneof data {
@@ -192,6 +243,9 @@ message Message {
     ServerResponseAnimation server_response_animation = 6;
     DrivenIngressConfig driven_config = 7;
     ClientInterrupt client_interrupt = 8;
+    ClientPause client_pause = 9;
+    ClientResume client_resume = 10;
+    ServerPlaybackState server_playback_state = 11;
   }
 }
 

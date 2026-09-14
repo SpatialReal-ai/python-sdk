@@ -28,7 +28,7 @@ from .errors import (
     SessionTokenError,
     error_code_for_close_code,
 )
-from .events import PlaybackSignal
+from .events import PlaybackSignal, PlaybackState, PlaybackStateEvent
 from .logid import generate_log_id
 from .proto.generated import message_pb2
 
@@ -36,6 +36,13 @@ SESSION_TOKEN_PATH = "/session-tokens"
 INGRESS_WEBSOCKET_PATH = "/websocket"
 
 logger = logging.getLogger(__name__)
+
+_PLAYBACK_STATE_BY_PROTO = {
+    message_pb2.ServerPlaybackState.PLAYING: PlaybackState.PLAYING,
+    message_pb2.ServerPlaybackState.PAUSED: PlaybackState.PAUSED,
+    message_pb2.ServerPlaybackState.ENDED: PlaybackState.ENDED,
+    message_pb2.ServerPlaybackState.INTERRUPTED: PlaybackState.INTERRUPTED,
+}
 
 
 class AvatarSession:
@@ -310,6 +317,47 @@ class AvatarSession:
         self._current_req_id = None
         return req_id
 
+    async def pause(self) -> str:
+        """Pause playback of the most recent request (egress mode); returns its id.
+
+        The server stops writing frames but keeps ingesting audio, so the caller
+        MUST keep sending audio (including ``end=True``) while paused. Only
+        meaningful when the server declared the ``playback_control`` capability;
+        on other servers/modes it is a no-op the server ignores (a
+        ``ServerPlaybackState`` reply still comes back if playback_state is on).
+        Unlike ``interrupt()``, this does not clear the current segment — a
+        following ``resume()`` continues it.
+        """
+        return await self._send_playback_control(
+            message_pb2.MESSAGE_CLIENT_PAUSE, "pause", lambda msg, rid: setattr(msg.client_pause, "req_id", rid)
+        )
+
+    async def resume(self) -> str:
+        """Resume the paused request from where it stopped; returns its id."""
+        return await self._send_playback_control(
+            message_pb2.MESSAGE_CLIENT_RESUME, "resume", lambda msg, rid: setattr(msg.client_resume, "req_id", rid)
+        )
+
+    async def _send_playback_control(self, msg_type: int, action: str, set_req_id) -> str:
+        if self._connection is None:
+            raise ValueError(f"{action}: websocket connection is not established")
+        req_id = self._last_req_id
+        if not req_id:
+            raise ValueError(f"{action}: no request to {action}")
+
+        msg = message_pb2.Message()
+        msg.type = msg_type
+        set_req_id(msg, req_id)
+
+        try:
+            await self._connection.send(msg.SerializeToString())
+        except Exception as e:
+            raise _transport_error(e, phase="websocket_send", action=f"send {action}", req_id=req_id) from e
+
+        # Deliberately NOT touching _current_req_id: pause/resume act on the
+        # in-flight segment and audio keeps flowing to it.
+        return req_id
+
     # ----------------------------------------------------------------- close
 
     async def close(self) -> None:
@@ -411,6 +459,20 @@ class AvatarSession:
                     self._config.transport_frames(bytes(payload), bool(anim.end))
                 except Exception:
                     logger.exception("transport_frames callback raised")
+        elif envelope.type == message_pb2.MESSAGE_SERVER_PLAYBACK_STATE:
+            if self._config.on_playback_state:
+                ps = envelope.server_playback_state
+                event = PlaybackStateEvent(
+                    req_id=ps.req_id,
+                    state=_PLAYBACK_STATE_BY_PROTO.get(ps.state, PlaybackState.UNSPECIFIED),
+                    played_ms=int(ps.played_ms),
+                    reason=ps.reason,
+                    connection_id=ps.connection_id,
+                )
+                try:
+                    self._config.on_playback_state(event)
+                except Exception:
+                    logger.exception("on_playback_state callback raised")
         elif envelope.type == message_pb2.MESSAGE_SERVER_ERROR:
             self._notify_error(_server_error(envelope.server_error, phase="websocket_runtime"))
         # Unknown message types are ignored on purpose: the server may add new

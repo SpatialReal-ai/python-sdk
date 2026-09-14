@@ -37,6 +37,23 @@ await session.interrupt()  # interrupts the latest request
 await session.close()
 ```
 
+### Pause / resume (egress mode)
+
+When the server declares the `playback_control` capability, the current
+segment can be paused and resumed instead of interrupted — the server holds
+its send cursor with zero regeneration:
+
+```python
+await session.pause()  # server stops writing frames, keeps ingesting audio
+# ...keep sending audio, including end=True, while paused...
+await session.resume()  # continues from where it stopped
+```
+
+Feature-detect with `"playback_control" in session.capabilities`. Subscribe to
+`on_playback_state(PlaybackStateEvent)` for the resulting state (PLAYING /
+PAUSED / ENDED / INTERRUPTED with `played_ms` and, on interrupt, a `reason` such
+as `pause_timeout`). Older servers never send it and ignore pause/resume.
+
 Session objects are single-use: on a dropped connection, create a fresh one
 (request state is deliberately not reusable across connections).
 `AvatarSDKError.retryable` tells you whether reconnecting can succeed — it
@@ -50,6 +67,8 @@ implements the server's WebSocket close-code contract (40xx: don't retry,
 - `CloseCode` + `AvatarSDKError.retryable` — the reconnect contract as API.
 - `session.capabilities` — server-declared capabilities from the handshake
   (feature-detect, don't version-detect).
+- `pause()` / `resume()` + `on_playback_state(PlaybackStateEvent)` — egress-mode
+  server-side playback control (gated on the `playback_control` capability).
 - `on_close` fires exactly once per session; the token request has a timeout.
 - Not carried over (yet): client-side Ogg Opus encoding. `AudioFormat.OGG_OPUS`
   works with pre-encoded bytes.

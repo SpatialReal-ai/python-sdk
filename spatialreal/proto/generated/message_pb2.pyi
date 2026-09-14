@@ -18,6 +18,9 @@ class MessageType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     MESSAGE_SERVER_RESPONSE_ANIMATION: _ClassVar[MessageType]
     MESSAGE_CLIENT_DRIVEN_CONFIG: _ClassVar[MessageType]
     MESSAGE_CLIENT_INTERRUPT: _ClassVar[MessageType]
+    MESSAGE_CLIENT_PAUSE: _ClassVar[MessageType]
+    MESSAGE_CLIENT_RESUME: _ClassVar[MessageType]
+    MESSAGE_SERVER_PLAYBACK_STATE: _ClassVar[MessageType]
 
 class AudioFormat(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
@@ -50,6 +53,9 @@ MESSAGE_SERVER_ERROR: MessageType
 MESSAGE_SERVER_RESPONSE_ANIMATION: MessageType
 MESSAGE_CLIENT_DRIVEN_CONFIG: MessageType
 MESSAGE_CLIENT_INTERRUPT: MessageType
+MESSAGE_CLIENT_PAUSE: MessageType
+MESSAGE_CLIENT_RESUME: MessageType
+MESSAGE_SERVER_PLAYBACK_STATE: MessageType
 AUDIO_FORMAT_PCM_S16LE: AudioFormat
 AUDIO_FORMAT_OGG_OPUS: AudioFormat
 TRANSPORT_COMPRESSION_NONE: TransportCompression
@@ -135,10 +141,12 @@ class ClientConfigureSession(_message.Message):
     def __init__(self, sample_rate: _Optional[int] = ..., bitrate: _Optional[int] = ..., audio_format: _Optional[_Union[AudioFormat, str]] = ..., transport_compression: _Optional[_Union[TransportCompression, str]] = ..., egress_type: _Optional[_Union[EgressType, str]] = ..., livekit_egress: _Optional[_Union[LiveKitEgressConfig, _Mapping]] = ..., agora_egress: _Optional[_Union[AgoraEgressConfig, _Mapping]] = ...) -> None: ...
 
 class ServerConfirmSession(_message.Message):
-    __slots__ = ("connection_id",)
+    __slots__ = ("connection_id", "capabilities")
     CONNECTION_ID_FIELD_NUMBER: _ClassVar[int]
+    CAPABILITIES_FIELD_NUMBER: _ClassVar[int]
     connection_id: str
-    def __init__(self, connection_id: _Optional[str] = ...) -> None: ...
+    capabilities: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, connection_id: _Optional[str] = ..., capabilities: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class ClientAudioInput(_message.Message):
     __slots__ = ("req_id", "end", "audio")
@@ -206,8 +214,46 @@ class ClientInterrupt(_message.Message):
     req_id: str
     def __init__(self, req_id: _Optional[str] = ...) -> None: ...
 
+class ClientPause(_message.Message):
+    __slots__ = ("req_id",)
+    REQ_ID_FIELD_NUMBER: _ClassVar[int]
+    req_id: str
+    def __init__(self, req_id: _Optional[str] = ...) -> None: ...
+
+class ClientResume(_message.Message):
+    __slots__ = ("req_id",)
+    REQ_ID_FIELD_NUMBER: _ClassVar[int]
+    req_id: str
+    def __init__(self, req_id: _Optional[str] = ...) -> None: ...
+
+class ServerPlaybackState(_message.Message):
+    __slots__ = ("connection_id", "req_id", "state", "played_ms", "reason")
+    class State(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+        __slots__ = ()
+        STATE_UNSPECIFIED: _ClassVar[ServerPlaybackState.State]
+        PLAYING: _ClassVar[ServerPlaybackState.State]
+        PAUSED: _ClassVar[ServerPlaybackState.State]
+        ENDED: _ClassVar[ServerPlaybackState.State]
+        INTERRUPTED: _ClassVar[ServerPlaybackState.State]
+    STATE_UNSPECIFIED: ServerPlaybackState.State
+    PLAYING: ServerPlaybackState.State
+    PAUSED: ServerPlaybackState.State
+    ENDED: ServerPlaybackState.State
+    INTERRUPTED: ServerPlaybackState.State
+    CONNECTION_ID_FIELD_NUMBER: _ClassVar[int]
+    REQ_ID_FIELD_NUMBER: _ClassVar[int]
+    STATE_FIELD_NUMBER: _ClassVar[int]
+    PLAYED_MS_FIELD_NUMBER: _ClassVar[int]
+    REASON_FIELD_NUMBER: _ClassVar[int]
+    connection_id: str
+    req_id: str
+    state: ServerPlaybackState.State
+    played_ms: int
+    reason: str
+    def __init__(self, connection_id: _Optional[str] = ..., req_id: _Optional[str] = ..., state: _Optional[_Union[ServerPlaybackState.State, str]] = ..., played_ms: _Optional[int] = ..., reason: _Optional[str] = ...) -> None: ...
+
 class Message(_message.Message):
-    __slots__ = ("type", "client_configure_session", "server_confirm_session", "client_audio_input", "server_error", "server_response_animation", "driven_config", "client_interrupt")
+    __slots__ = ("type", "client_configure_session", "server_confirm_session", "client_audio_input", "server_error", "server_response_animation", "driven_config", "client_interrupt", "client_pause", "client_resume", "server_playback_state")
     TYPE_FIELD_NUMBER: _ClassVar[int]
     CLIENT_CONFIGURE_SESSION_FIELD_NUMBER: _ClassVar[int]
     SERVER_CONFIRM_SESSION_FIELD_NUMBER: _ClassVar[int]
@@ -216,6 +262,9 @@ class Message(_message.Message):
     SERVER_RESPONSE_ANIMATION_FIELD_NUMBER: _ClassVar[int]
     DRIVEN_CONFIG_FIELD_NUMBER: _ClassVar[int]
     CLIENT_INTERRUPT_FIELD_NUMBER: _ClassVar[int]
+    CLIENT_PAUSE_FIELD_NUMBER: _ClassVar[int]
+    CLIENT_RESUME_FIELD_NUMBER: _ClassVar[int]
+    SERVER_PLAYBACK_STATE_FIELD_NUMBER: _ClassVar[int]
     type: MessageType
     client_configure_session: ClientConfigureSession
     server_confirm_session: ServerConfirmSession
@@ -224,4 +273,7 @@ class Message(_message.Message):
     server_response_animation: ServerResponseAnimation
     driven_config: DrivenIngressConfig
     client_interrupt: ClientInterrupt
-    def __init__(self, type: _Optional[_Union[MessageType, str]] = ..., client_configure_session: _Optional[_Union[ClientConfigureSession, _Mapping]] = ..., server_confirm_session: _Optional[_Union[ServerConfirmSession, _Mapping]] = ..., client_audio_input: _Optional[_Union[ClientAudioInput, _Mapping]] = ..., server_error: _Optional[_Union[ServerError, _Mapping]] = ..., server_response_animation: _Optional[_Union[ServerResponseAnimation, _Mapping]] = ..., driven_config: _Optional[_Union[DrivenIngressConfig, _Mapping]] = ..., client_interrupt: _Optional[_Union[ClientInterrupt, _Mapping]] = ...) -> None: ...
+    client_pause: ClientPause
+    client_resume: ClientResume
+    server_playback_state: ServerPlaybackState
+    def __init__(self, type: _Optional[_Union[MessageType, str]] = ..., client_configure_session: _Optional[_Union[ClientConfigureSession, _Mapping]] = ..., server_confirm_session: _Optional[_Union[ServerConfirmSession, _Mapping]] = ..., client_audio_input: _Optional[_Union[ClientAudioInput, _Mapping]] = ..., server_error: _Optional[_Union[ServerError, _Mapping]] = ..., server_response_animation: _Optional[_Union[ServerResponseAnimation, _Mapping]] = ..., driven_config: _Optional[_Union[DrivenIngressConfig, _Mapping]] = ..., client_interrupt: _Optional[_Union[ClientInterrupt, _Mapping]] = ..., client_pause: _Optional[_Union[ClientPause, _Mapping]] = ..., client_resume: _Optional[_Union[ClientResume, _Mapping]] = ..., server_playback_state: _Optional[_Union[ServerPlaybackState, _Mapping]] = ...) -> None: ...

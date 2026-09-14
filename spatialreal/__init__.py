@@ -27,7 +27,7 @@ from .config import (
     SessionConfig,
 )
 from .errors import AvatarSDKError, AvatarSDKErrorCode, CloseCode, SessionTokenError
-from .events import PlaybackSignal
+from .events import InterruptReason, PlaybackSignal, PlaybackState, PlaybackStateEvent
 from .logid import generate_log_id
 from .session import AvatarSession, new_avatar_session
 from .version import __version__
@@ -41,6 +41,9 @@ __all__ = [
     "CloseCode",
     "LiveKitEgressConfig",
     "PlaybackSignal",
+    "PlaybackStateEvent",
+    "PlaybackState",
+    "InterruptReason",
     "SessionConfig",
     "SessionTokenError",
     "__version__",

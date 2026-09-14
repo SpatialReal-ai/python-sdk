@@ -13,7 +13,7 @@
 set -eu
 cd "$(dirname "$0")/.."
 
-python -m grpc_tools.protoc \
+python3 -m grpc_tools.protoc \
   -I proto \
   --python_out=spatialreal/proto/generated \
   --pyi_out=spatialreal/proto/generated \

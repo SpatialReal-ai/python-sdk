@@ -396,3 +396,97 @@ async def test_server_error_with_grpc_code_is_not_a_close_code():
     assert err.close_code is None, "gRPC codes must not enter the close-code contract"
     assert err.code == AvatarSDKErrorCode.serverError
     assert err.server_code == "14"
+
+
+def playback_state_msg(req_id, state, played_ms=0, reason=""):
+    m = message_pb2.Message()
+    m.type = message_pb2.MESSAGE_SERVER_PLAYBACK_STATE
+    m.server_playback_state.req_id = req_id
+    m.server_playback_state.state = state
+    m.server_playback_state.played_ms = played_ms
+    m.server_playback_state.reason = reason
+    m.server_playback_state.connection_id = "conn-1"
+    return m.SerializeToString()
+
+
+async def test_pause_resume_send_control_messages_without_clearing_segment():
+    async with FakeBackend() as backend:
+        session = make_session(backend)
+        await session.init()
+        await session.start()
+
+        req = await session.send_audio(b"\x01\x02")
+        assert await session.pause() == req
+        # audio keeps flowing to the same segment while paused
+        assert await session.send_audio(b"\x03") == req
+        assert await session.resume() == req
+        assert await session.send_audio(b"", end=True) == req
+
+        await asyncio.sleep(0.1)
+        await session.close()
+
+        kinds = [m.type for m in backend.received]
+        assert kinds.count(message_pb2.MESSAGE_CLIENT_PAUSE) == 1
+        assert kinds.count(message_pb2.MESSAGE_CLIENT_RESUME) == 1
+        pauses = [m.client_pause for m in backend.received if m.type == message_pb2.MESSAGE_CLIENT_PAUSE]
+        assert pauses[0].req_id == req
+
+
+async def test_pause_before_any_audio_raises():
+    async with FakeBackend() as backend:
+        session = make_session(backend)
+        await session.init()
+        await session.start()
+        with pytest.raises(ValueError):
+            await session.pause()
+        await session.close()
+
+
+async def test_playback_state_events_parsed():
+    from spatialreal import InterruptReason, PlaybackState
+
+    events = []
+
+    async def script(backend, ws):
+        await ws.send(playback_state_msg("req-A", message_pb2.ServerPlaybackState.PAUSED, 1200))
+        await ws.send(playback_state_msg("req-A", message_pb2.ServerPlaybackState.PLAYING, 1200))
+        await ws.send(
+            playback_state_msg("req-A", message_pb2.ServerPlaybackState.INTERRUPTED, 1500, reason="pause_timeout")
+        )
+        await asyncio.sleep(0.2)
+
+    async with FakeBackend() as backend:
+        backend.script = script
+        session = make_session(backend, on_playback_state=events.append)
+        await session.init()
+        await session.start()
+        await asyncio.sleep(0.3)
+        await session.close()
+
+    assert [(e.state, e.played_ms) for e in events] == [
+        (PlaybackState.PAUSED, 1200),
+        (PlaybackState.PLAYING, 1200),
+        (PlaybackState.INTERRUPTED, 1500),
+    ]
+    assert events[2].reason == InterruptReason.PAUSE_TIMEOUT
+    assert events[0].req_id == "req-A"
+
+
+async def test_playback_state_ignored_without_callback():
+    async def script(backend, ws):
+        await ws.send(playback_state_msg("req-A", message_pb2.ServerPlaybackState.PAUSED))
+        await ws.send(anim_msg("req-A", end=True))
+        await asyncio.sleep(0.2)
+
+    async with FakeBackend() as backend:
+        backend.script = script
+        signals, errors = [], []
+        session = make_session(backend, on_playback=signals.append, on_error=errors.append)
+        await session.init()
+        await session.start()
+        await asyncio.sleep(0.3)
+        await session.close()
+
+    # no on_playback_state handler: the message is silently ignored, others still flow
+    assert errors == []
+    assert [s.req_id for s in signals] == ["req-A"]
