@@ -32,7 +32,11 @@ from .events import PlaybackSignal
 from .logid import generate_log_id
 from .proto.generated import message_pb2
 
-SESSION_TOKEN_PATH = "/session-tokens"
+# cp's primary route. `/v1/console/session-tokens` is only an alias kept so older
+# callers don't 404; it is the same handler and may go away.
+SESSION_TOKEN_PATH = "/v1/auth/session-token"
+# Accepted for back-compat: callers used to pass the cp root with this suffix already on it.
+LEGACY_CONSOLE_SUFFIX = "/v1/console"
 INGRESS_WEBSOCKET_PATH = "/websocket"
 
 logger = logging.getLogger(__name__)
@@ -83,7 +87,7 @@ class AvatarSession:
         if not self._config.expire_at:
             raise ValueError("Missing expire_at")
 
-        endpoint = self._config.console_endpoint_url.rstrip("/") + SESSION_TOKEN_PATH
+        endpoint = _session_token_endpoint(self._config.console_endpoint_url)
         payload = {"expireAt": int(self._config.expire_at.timestamp())}
         headers = {"X-Api-Key": self._config.api_key, "Content-Type": "application/json"}
         timeout = aiohttp.ClientTimeout(total=self._config.token_request_timeout)
@@ -445,6 +449,18 @@ def _try_parse_json(body: str) -> Any:
         return json.loads(body)
     except (ValueError, TypeError):
         return None
+
+
+def _session_token_endpoint(console_endpoint_url: str) -> str:
+    """Build the session-token URL from the cp API root.
+
+    ``console_endpoint_url`` is the cp root (``https://api.spatialreal.dev``). A value
+    that still carries the old ``/v1/console`` suffix is accepted and normalized.
+    """
+    base = console_endpoint_url.rstrip("/")
+    if base.endswith(LEGACY_CONSOLE_SUFFIX):
+        base = base[: -len(LEGACY_CONSOLE_SUFFIX)]
+    return base + SESSION_TOKEN_PATH
 
 
 def _session_token_error(status: int, data: Any, body: str) -> SessionTokenError:

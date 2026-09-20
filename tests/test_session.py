@@ -41,12 +41,13 @@ class FakeBackend:
         self.ws_headers: dict[str, str] = {}
         self.handshake_reply = None  # None = normal confirm
         self.console_url = ""
+        self.token_paths: list[str] = []
         self.ingress_url = ""
         self._servers = []
 
     async def __aenter__(self):
         app = web.Application()
-        app.router.add_post("/session-tokens", self._token_handler)
+        app.router.add_post("/v1/auth/session-token", self._token_handler)
         runner = web.AppRunner(app)
         await runner.setup()
         site = web.TCPSite(runner, "127.0.0.1", 0)
@@ -68,6 +69,7 @@ class FakeBackend:
 
     async def _token_handler(self, request: web.Request) -> web.Response:
         assert request.headers.get("X-Api-Key"), "missing X-Api-Key"
+        self.token_paths.append(request.path)
         body = self.token_body if self.token_body is not None else {"session_token": "tok-123"}
         return web.Response(status=self.token_status, text=json.dumps(body), content_type="application/json")
 
@@ -128,6 +130,7 @@ async def test_init_exchanges_api_key_for_token():
         session = make_session(backend)
         await session.init()
         assert session._session_token == "tok-123"
+        assert backend.token_paths == ["/v1/auth/session-token"], backend.token_paths
 
 
 async def test_init_maps_auth_failure():
@@ -396,3 +399,15 @@ async def test_server_error_with_grpc_code_is_not_a_close_code():
     assert err.close_code is None, "gRPC codes must not enter the close-code contract"
     assert err.code == AvatarSDKErrorCode.serverError
     assert err.server_code == "14"
+
+
+def test_session_token_endpoint_uses_auth_route() -> None:
+    """cp's primary route is /v1/auth/session-token; the old /v1/console suffix a
+    caller may still carry in console_endpoint_url is normalized away, never doubled."""
+    from spatialreal.session import _session_token_endpoint
+
+    root = "https://api.spatialreal.dev"
+    assert _session_token_endpoint(root) == f"{root}/v1/auth/session-token"
+    assert _session_token_endpoint(root + "/") == f"{root}/v1/auth/session-token"
+    assert _session_token_endpoint(root + "/v1/console") == f"{root}/v1/auth/session-token"
+    assert _session_token_endpoint(root + "/v1/console/") == f"{root}/v1/auth/session-token"
