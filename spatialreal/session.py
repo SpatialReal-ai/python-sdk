@@ -102,13 +102,13 @@ class AvatarSession:
         data = _try_parse_json(body)
         if status != 200 or (isinstance(data, dict) and data.get("errors")):
             raise _session_token_error(status, data, body)
-        if not isinstance(data, dict) or not data.get("sessionToken"):
+        if not isinstance(data, dict) or not data.get("session_token"):
             raise SessionTokenError(
                 "Failed to decode session token response",
                 code=AvatarSDKErrorCode.protocolError,
                 raw_body=body,
             )
-        self._session_token = data["sessionToken"]
+        self._session_token = data["session_token"]
 
     # ----------------------------------------------------------------- start
 

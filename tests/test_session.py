@@ -68,7 +68,7 @@ class FakeBackend:
 
     async def _token_handler(self, request: web.Request) -> web.Response:
         assert request.headers.get("X-Api-Key"), "missing X-Api-Key"
-        body = self.token_body if self.token_body is not None else {"sessionToken": "tok-123"}
+        body = self.token_body if self.token_body is not None else {"session_token": "tok-123"}
         return web.Response(status=self.token_status, text=json.dumps(body), content_type="application/json")
 
     async def _ws_handler(self, ws):
