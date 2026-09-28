@@ -47,6 +47,10 @@ enum EgressType {
 // CloseCode is the WebSocket close code the server sends when it ends a session, and
 // the value carried in ServerError.code.
 //
+// Delivery: the server sends a ServerError carrying the code, then closes the socket with
+// the same code — at the handshake (a refused session) and in-session (credits exhausted,
+// session ceiling reached). A client may act on whichever arrives first.
+//
 // These are a client contract, not diagnostics: the SDK branches on them to decide
 // whether to reconnect. Picking the wrong one is a behavioural bug, not a wording one —
 // a retryable failure reported as CLOSE_CODE_AUTH_FAILED makes the client give up for good.
@@ -154,6 +158,9 @@ message ServerConfirmSession {
 }
 message ClientAudioInput {
   string req_id = 1;
+  // Last message of this req_id. Only a message carrying end drains the ~21 ms filter tail
+  // held by the server's resampler, so a segment is not complete until end is sent; it may
+  // be sent with empty audio.
   bool end = 2;
   // For AUDIO_FORMAT_OGG_OPUS, audio carries a slice of the continuous Ogg stream.
   // Each req_id must use a single logical stream spanning multiple messages.
@@ -164,6 +171,10 @@ message ClientAudioInput {
 message ServerError {
   string connection_id = 1;
   string req_id = 2;
+  // Always a CloseCode number, never a gRPC status. A refused or ended session carries the
+  // code the close frame repeats; an in-session failure carries the CloseCode it maps to
+  // (4010 for an auth failure, 4503 for an unavailable upstream) or 0 (CLOSE_CODE_UNSPECIFIED)
+  // when it has no client-facing class — `message` says what happened.
   int32 code = 3;
   string message = 4;
 }
@@ -182,14 +193,24 @@ message FlameAnimation {
   repeated Flame keyframes = 1;
 }
 
+// Animation frames for one req_id, in order, at 25 fps. The server does not pace or
+// rate-limit them: a client applies its own backpressure.
 message ServerResponseAnimation {
   string connection_id = 1;
   string req_id = 2;
+  // Last frames of this req_id: the server has drained inference for it. It marks the end
+  // of a segment, not of the turn — an agent runtime splits one turn into several req_ids at
+  // silences — so a client derives "no more frames this turn" from its own end marker (the
+  // SDK's end=true, the agent route's turn.end), never from this flag.
   bool end = 3;
   FlameAnimation animation = 4;
   string avatar_id = 5;
 }
 
+// Interrupt the whole turn of req_id: audio buffered for it that has not reached inference
+// is discarded (never flushed) and the processor is cancelled. Frames already emitted are
+// still in flight and reach the client, which must drop them. Contrast ClientPause, which
+// discards nothing.
 message ClientInterrupt {
   string req_id = 1;
 }
@@ -197,6 +218,8 @@ message ClientInterrupt {
 // 暂停当前 req_id 的播放。req_id 与服务端当前会话不匹配时被忽略,但仍会收到一条
 // SERVER_PLAYBACK_STATE 回执(内容是当前会话的真实状态,req_id 用请求里的那个)。
 // 暂停期间客户端应【照常继续发送音频,包括 end=true】—— 服务端只停写出、不停吸入。
+// Unlike interrupt, pause cancels nothing and discards no buffered audio; resume continues
+// from the same position.
 message ClientPause {
   string req_id = 1;
 }
