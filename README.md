@@ -19,8 +19,8 @@ session = new_avatar_session(
     api_key="...",
     app_id="...",
     avatar_id="...",
-    console_endpoint_url="https://api.spatialreal.dev",  # cp API root
-    ingress_endpoint_url="wss://test-driven.spatialreal.dev/v2/driveningress",
+    console_endpoint_url="https://api.spatialreal.com",  # OpenAPI root: session tokens
+    ingress_endpoint_url="wss://driven.us-west.spatialreal.cloud/v2/driveningress",
     expire_at=datetime.now(timezone.utc) + timedelta(hours=1),
     sample_rate=16000,
     livekit_egress=LiveKitEgressConfig(url=..., api_token=..., room_name=..., publisher_id=...),

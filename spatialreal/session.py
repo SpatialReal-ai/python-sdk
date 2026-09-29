@@ -452,9 +452,9 @@ def _try_parse_json(body: str) -> Any:
 
 
 def _session_token_endpoint(console_endpoint_url: str) -> str:
-    """Build the session-token URL from the cp API root.
+    """Build the session-token URL from the OpenAPI root.
 
-    ``console_endpoint_url`` is the cp root (``https://api.spatialreal.dev``). A value
+    ``console_endpoint_url`` is the OpenAPI root (``https://api.spatialreal.com``). A value
     that still carries the old ``/v1/console`` suffix is accepted and normalized.
     """
     base = console_endpoint_url.rstrip("/")
