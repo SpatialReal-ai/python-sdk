@@ -5,10 +5,6 @@ backend: stream audio in, get lifecycle signals back, and (in egress mode) have
 the avatar's synchronized audio/video published straight into a LiveKit room or
 Agora channel.
 
-Successor to the retired `avatarkit` package: same wire protocol, same session
-semantics. Migrating is one import swap (`from avatarkit import ...` →
-`from spatialreal import ...`).
-
 ## Usage
 
 ```python
@@ -19,7 +15,7 @@ session = new_avatar_session(
     api_key="...",
     app_id="...",
     avatar_id="...",
-    console_endpoint_url="https://api.spatialreal.com",  # OpenAPI root: session tokens
+    console_endpoint_url="https://api.spatialreal.cloud",  # OpenAPI root: session tokens
     ingress_endpoint_url="wss://driven.us-west.spatialreal.cloud/v2/driveningress",
     expire_at=datetime.now(timezone.utc) + timedelta(hours=1),
     sample_rate=16000,
@@ -43,7 +39,7 @@ Session objects are single-use: on a dropped connection, create a fresh one
 implements the server's WebSocket close-code contract (40xx: don't retry,
 45xx: retry with backoff).
 
-## What's new vs avatarkit
+## What's new
 
 - `on_playback(PlaybackSignal)` — structured playback lifecycle; no protobuf
   parsing in caller code (`transport_frames(raw, is_last)` still exists).
@@ -51,8 +47,8 @@ implements the server's WebSocket close-code contract (40xx: don't retry,
 - `session.capabilities` — server-declared capabilities from the handshake
   (feature-detect, don't version-detect).
 - `on_close` fires exactly once per session; the token request has a timeout.
-- Not carried over (yet): client-side Ogg Opus encoding. `AudioFormat.OGG_OPUS`
-  works with pre-encoded bytes.
+- `AudioFormat.OGG_OPUS` takes pre-encoded bytes; the SDK does not encode
+  client-side.
 
 ## Development
 
