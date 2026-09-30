@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 
-from .events import PlaybackSignal
+from .events import PlaybackSignal, PlaybackStateEvent
 
 
 class AudioFormat(str, Enum):
@@ -62,6 +62,9 @@ class SessionConfig:
 
     - ``on_playback(signal)``: structured playback lifecycle parsed from
       ``ServerResponseAnimation`` — preferred over ``transport_frames``.
+    - ``on_playback_state(event)``: structured ``ServerPlaybackState`` for
+      egress-mode playback control (pause/resume/interrupt position); only
+      arrives when the server declares the ``playback_state`` capability.
     - ``transport_frames(frame_bytes, is_last)``: the raw serialized ``Message``
       envelope, for callers that decode the protobuf themselves.
     - ``on_error(error)``: transport/server errors outside a call site (read
@@ -86,6 +89,7 @@ class SessionConfig:
     agora_egress: AgoraEgressConfig | None = None
 
     on_playback: Callable[[PlaybackSignal], None] | None = None
+    on_playback_state: Callable[[PlaybackStateEvent], None] | None = None
     transport_frames: Callable[[bytes, bool], None] | None = None
     on_error: Callable[[Exception], None] | None = None
     on_close: Callable[[], None] | None = None
