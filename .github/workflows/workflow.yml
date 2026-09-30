@@ -9,7 +9,10 @@ on:
     types: [created]
 
 permissions:
+  # id-token for PyPI trusted publishing; contents so checkout can read this
+  # private repo — naming any permission drops the defaults for the rest.
   id-token: write
+  contents: read
 
 jobs:
   publish:
