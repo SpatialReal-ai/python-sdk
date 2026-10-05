@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 
+from .environments import DEFAULT_ENVIRONMENT
 from .events import PlaybackSignal, PlaybackStateEvent
 
 
@@ -83,6 +84,10 @@ class SessionConfig:
     sample_rate: int = 16000
     bitrate: int = 0
     audio_format: AudioFormat = AudioFormat.PCM_S16LE
+    # Which deployment to talk to. Endpoints are resolved from it (config service,
+    # then built-in presets), so callers normally set neither URL below.
+    environment: str = DEFAULT_ENVIRONMENT
+    # Explicit overrides; each one given wins over the environment's.
     console_endpoint_url: str = ""
     ingress_endpoint_url: str = ""
     livekit_egress: LiveKitEgressConfig | None = None

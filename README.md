@@ -15,8 +15,6 @@ session = new_avatar_session(
     api_key="...",
     app_id="...",
     avatar_id="...",
-    console_endpoint_url="https://api.spatialreal.cloud",  # OpenAPI root: session tokens
-    ingress_endpoint_url="wss://driven.us-west.spatialreal.cloud/v2/driveningress",
     expire_at=datetime.now(timezone.utc) + timedelta(hours=1),
     sample_rate=16000,
     livekit_egress=LiveKitEgressConfig(url=..., api_token=..., room_name=..., publisher_id=...),
@@ -52,6 +50,19 @@ as `pause_timeout`). Older servers never send it and ignore pause/resume.
 
 Session objects are single-use: on a dropped connection, create a fresh one
 (request state is deliberately not reusable across connections).
+## Endpoints
+
+Endpoints come from the environment you name, so callers write no URLs:
+
+```python
+session = new_avatar_session(..., environment="us-west")  # the default
+```
+
+They are resolved from SpatialReal's config service (built-in presets cover it being
+unreachable), which is what lets a deployment move, or a region be added, without an
+SDK release. Pass `console_endpoint_url` / `ingress_endpoint_url` to override either one
+— useful against a local or private deployment.
+
 `AvatarSDKError.retryable` tells you whether reconnecting can succeed — it
 implements the server's WebSocket close-code contract (40xx: don't retry,
 45xx: retry with backoff).
@@ -61,6 +72,8 @@ implements the server's WebSocket close-code contract (40xx: don't retry,
 - `on_playback(PlaybackSignal)` — structured playback lifecycle; no protobuf
   parsing in caller code (`transport_frames(raw, is_last)` still exists).
 - `CloseCode` + `AvatarSDKError.retryable` — the reconnect contract as API.
+- `environment="us-west"` — endpoints resolved from the config service instead of
+  hard-coded URLs; new regions need no SDK release.
 - `session.capabilities` — server-declared capabilities from the handshake
   (feature-detect, don't version-detect).
 - `pause()` / `resume()` + `on_playback_state(PlaybackStateEvent)` — egress-mode

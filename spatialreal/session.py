@@ -21,6 +21,7 @@ from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 import aiohttp
 import websockets
 
+from . import environments
 from .config import AudioFormat, SessionConfig
 from .errors import (
     AvatarSDKError,
@@ -37,6 +38,7 @@ from .proto.generated import message_pb2
 SESSION_TOKEN_PATH = "/v1/auth/session-token"
 # Accepted for back-compat: callers used to pass the cp root with this suffix already on it.
 LEGACY_CONSOLE_SUFFIX = "/v1/console"
+DRIVENINGRESS_PATH = "/v2/driveningress"
 INGRESS_WEBSOCKET_PATH = "/websocket"
 
 logger = logging.getLogger(__name__)
@@ -62,6 +64,7 @@ class AvatarSession:
         self._last_req_id: str | None = None
         self._read_task: asyncio.Task | None = None
         self._close_notified = False
+        self._resolved_endpoints: environments.EnvironmentEndpoints | None = None
 
     # ------------------------------------------------------------------ props
 
@@ -83,18 +86,36 @@ class AvatarSession:
         """
         return self._capabilities
 
+    # ------------------------------------------------------------- endpoints
+
+    async def _endpoints(self) -> environments.EnvironmentEndpoints:
+        if self._resolved_endpoints is None:
+            self._resolved_endpoints = await environments.resolve(self._config.environment)
+        return self._resolved_endpoints
+
+    async def _console_endpoint(self) -> str:
+        """The OpenAPI root: the caller's if given, else the environment's."""
+        if self._config.console_endpoint_url:
+            return self._config.console_endpoint_url
+        return (await self._endpoints()).api
+
+    async def _ingress_endpoint(self) -> str:
+        """The driven-ingress WebSocket URL, built from the environment's origin."""
+        if self._config.ingress_endpoint_url:
+            return self._config.ingress_endpoint_url
+        origin = (await self._endpoints()).driveningress.rstrip("/")
+        return origin + DRIVENINGRESS_PATH
+
     # ------------------------------------------------------------------ init
 
     async def init(self) -> None:
         """Exchange the API key for a session token via the console API."""
         if not self._config.api_key:
             raise ValueError("Missing API key")
-        if not self._config.console_endpoint_url:
-            raise ValueError("Missing console endpoint URL")
         if not self._config.expire_at:
             raise ValueError("Missing expire_at")
 
-        endpoint = _session_token_endpoint(self._config.console_endpoint_url)
+        endpoint = _session_token_endpoint(await self._console_endpoint())
         payload = {"expireAt": int(self._config.expire_at.timestamp())}
         headers = {"X-Api-Key": self._config.api_key, "Content-Type": "application/json"}
         timeout = aiohttp.ClientTimeout(total=self._config.token_request_timeout)
@@ -132,8 +153,6 @@ class AvatarSession:
             raise ValueError("Session already started")
         if not self._session_token:
             raise ValueError("Session not initialized (call init() first)")
-        if not self._config.ingress_endpoint_url:
-            raise ValueError("Missing ingress endpoint URL")
         if not self._config.avatar_id:
             raise ValueError("Missing avatar ID")
         if not self._config.app_id:
@@ -141,7 +160,7 @@ class AvatarSession:
         if self._config.livekit_egress is not None and self._config.agora_egress is not None:
             raise ValueError("Cannot configure both livekit_egress and agora_egress")
 
-        ws_url, headers = self._build_ws_target()
+        ws_url, headers = self._build_ws_target(await self._ingress_endpoint())
 
         try:
             self._connection = await _ws_connect(ws_url, headers)
@@ -163,8 +182,8 @@ class AvatarSession:
         self._read_task = asyncio.create_task(self._read_loop())
         return self._connection_id
 
-    def _build_ws_target(self) -> tuple[str, dict[str, str]]:
-        endpoint = self._config.ingress_endpoint_url.rstrip("/") + INGRESS_WEBSOCKET_PATH
+    def _build_ws_target(self, ingress_endpoint_url: str) -> tuple[str, dict[str, str]]:
+        endpoint = ingress_endpoint_url.rstrip("/") + INGRESS_WEBSOCKET_PATH
         parsed = urlparse(endpoint)
         scheme = parsed.scheme.lower()
         ws_scheme = {"http": "ws", "https": "wss", "ws": "ws", "wss": "wss"}.get(scheme)
