@@ -12,6 +12,7 @@ import websockets
 from aiohttp import web
 
 from spatialreal import (
+    AgoraEgressConfig,
     AvatarSDKError,
     AvatarSDKErrorCode,
     CloseCode,
@@ -180,6 +181,26 @@ async def test_start_handshake_headers_auth_and_egress_config():
         assert cfg.livekit_egress.room_name == "room-1"
         assert cfg.livekit_egress.idle_timeout == 30
         assert cfg.sample_rate == 16000
+        await session.close()
+
+
+async def test_start_agora_egress_config_on_the_wire():
+    async with FakeBackend() as backend:
+        session = make_session(
+            backend,
+            agora_egress=AgoraEgressConfig(
+                channel_name="ch-1", token="rtc-token", uid=7, publisher_id="7", app_id="appid-1"
+            ),
+        )
+        await session.init()
+        await session.start()
+        cfg = backend.configure
+        assert cfg.egress_type == message_pb2.EGRESS_TYPE_AGORA
+        assert cfg.agora_egress.channel_name == "ch-1"
+        assert cfg.agora_egress.token == "rtc-token"
+        assert cfg.agora_egress.uid == 7
+        assert cfg.agora_egress.publisher_id == "7"
+        assert cfg.agora_egress.app_id == "appid-1"
         await session.close()
 
 
