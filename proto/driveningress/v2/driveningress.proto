@@ -111,6 +111,11 @@ message AgoraEgressConfig {
   uint32 uid = 3;
   // Publisher identity/name
   string publisher_id = 4;
+  // Agora App ID the token was minted for. The egress worker runs against one Agora
+  // project (its AGORA_APP_ID); when this is set and differs, the session is refused at
+  // configure time with a clear error instead of failing on the token inside the SDK.
+  // Leave empty to use the egress worker's project.
+  string app_id = 5;
 }
 
 // DrivenIngressConfig contains driven server configuration

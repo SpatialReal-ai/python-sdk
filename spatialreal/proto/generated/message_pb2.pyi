@@ -97,16 +97,18 @@ class LiveKitEgressConfig(_message.Message):
     def __init__(self, url: _Optional[str] = ..., api_key: _Optional[str] = ..., api_secret: _Optional[str] = ..., room_name: _Optional[str] = ..., publisher_id: _Optional[str] = ..., extra_attributes: _Optional[_Mapping[str, str]] = ..., idle_timeout: _Optional[int] = ..., api_token: _Optional[str] = ...) -> None: ...
 
 class AgoraEgressConfig(_message.Message):
-    __slots__ = ("channel_name", "token", "uid", "publisher_id")
+    __slots__ = ("channel_name", "token", "uid", "publisher_id", "app_id")
     CHANNEL_NAME_FIELD_NUMBER: _ClassVar[int]
     TOKEN_FIELD_NUMBER: _ClassVar[int]
     UID_FIELD_NUMBER: _ClassVar[int]
     PUBLISHER_ID_FIELD_NUMBER: _ClassVar[int]
+    APP_ID_FIELD_NUMBER: _ClassVar[int]
     channel_name: str
     token: str
     uid: int
     publisher_id: str
-    def __init__(self, channel_name: _Optional[str] = ..., token: _Optional[str] = ..., uid: _Optional[int] = ..., publisher_id: _Optional[str] = ...) -> None: ...
+    app_id: str
+    def __init__(self, channel_name: _Optional[str] = ..., token: _Optional[str] = ..., uid: _Optional[int] = ..., publisher_id: _Optional[str] = ..., app_id: _Optional[str] = ...) -> None: ...
 
 class DrivenIngressConfig(_message.Message):
     __slots__ = ("shape_npy", "style_npy", "driven_server_url", "model_settings", "encoder_start_frame")

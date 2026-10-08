@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from google.protobuf import struct_pb2 as google_dot_protobuf_dot_struct__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n$driveningress/v2/driveningress.proto\x12\x10\x64riveningress.v2\x1a\x1cgoogle/protobuf/struct.proto\"\xa7\x02\n\x13LiveKitEgressConfig\x12\x0b\n\x03url\x18\x01 \x01(\t\x12\x0f\n\x07\x61pi_key\x18\x02 \x01(\t\x12\x12\n\napi_secret\x18\x03 \x01(\t\x12\x11\n\troom_name\x18\x04 \x01(\t\x12\x14\n\x0cpublisher_id\x18\x05 \x01(\t\x12T\n\x10\x65xtra_attributes\x18\x06 \x03(\x0b\x32:.driveningress.v2.LiveKitEgressConfig.ExtraAttributesEntry\x12\x14\n\x0cidle_timeout\x18\x07 \x01(\x05\x12\x11\n\tapi_token\x18\x08 \x01(\t\x1a\x36\n\x14\x45xtraAttributesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"[\n\x11\x41goraEgressConfig\x12\x14\n\x0c\x63hannel_name\x18\x01 \x01(\t\x12\r\n\x05token\x18\x02 \x01(\t\x12\x0b\n\x03uid\x18\x03 \x01(\r\x12\x14\n\x0cpublisher_id\x18\x04 \x01(\t\"\xa4\x01\n\x13\x44rivenIngressConfig\x12\x11\n\tshape_npy\x18\x01 \x01(\x0c\x12\x11\n\tstyle_npy\x18\x02 \x01(\x0c\x12\x19\n\x11\x64riven_server_url\x18\x03 \x01(\t\x12/\n\x0emodel_settings\x18\x04 \x01(\x0b\x32\x17.google.protobuf.Struct\x12\x1b\n\x13\x65ncoder_start_frame\x18\x05 \x01(\x05\"\xe7\x02\n\x16\x43lientConfigureSession\x12\x13\n\x0bsample_rate\x18\x01 \x01(\x05\x12\x0f\n\x07\x62itrate\x18\x02 \x01(\x05\x12\x33\n\x0c\x61udio_format\x18\x03 \x01(\x0e\x32\x1d.driveningress.v2.AudioFormat\x12\x45\n\x15transport_compression\x18\x04 \x01(\x0e\x32&.driveningress.v2.TransportCompression\x12\x31\n\x0b\x65gress_type\x18\x05 \x01(\x0e\x32\x1c.driveningress.v2.EgressType\x12=\n\x0elivekit_egress\x18\x06 \x01(\x0b\x32%.driveningress.v2.LiveKitEgressConfig\x12\x39\n\x0c\x61gora_egress\x18\x07 \x01(\x0b\x32#.driveningress.v2.AgoraEgressConfig\"C\n\x14ServerConfirmSession\x12\x15\n\rconnection_id\x18\x01 \x01(\t\x12\x14\n\x0c\x63\x61pabilities\x18\x02 \x03(\t\">\n\x10\x43lientAudioInput\x12\x0e\n\x06req_id\x18\x01 \x01(\t\x12\x0b\n\x03\x65nd\x18\x02 \x01(\x08\x12\r\n\x05\x61udio\x18\x03 \x01(\x0c\"S\n\x0bServerError\x12\x15\n\rconnection_id\x18\x01 \x01(\t\x12\x0e\n\x06req_id\x18\x02 \x01(\t\x12\x0c\n\x04\x63ode\x18\x03 \x01(\x05\x12\x0f\n\x07message\x18\x04 \x01(\t\"\xa6\x01\n\x05\x46lame\x12\x17\n\x0btranslation\x18\x01 \x03(\x02\x42\x02\x10\x01\x12\x14\n\x08rotation\x18\x02 \x03(\x02\x42\x02\x10\x01\x12\x15\n\tneck_pose\x18\x03 \x03(\x02\x42\x02\x10\x01\x12\x14\n\x08jaw_pose\x18\x04 \x03(\x02\x42\x02\x10\x01\x12\x14\n\x08\x65ye_pose\x18\x05 \x03(\x02\x42\x02\x10\x01\x12\x13\n\x07\x65ye_lid\x18\x06 \x03(\x02\x42\x02\x10\x01\x12\x16\n\nexpression\x18\x07 \x03(\x02\x42\x02\x10\x01\"<\n\x0e\x46lameAnimation\x12*\n\tkeyframes\x18\x01 \x03(\x0b\x32\x17.driveningress.v2.Flame\"\x95\x01\n\x17ServerResponseAnimation\x12\x15\n\rconnection_id\x18\x01 \x01(\t\x12\x0e\n\x06req_id\x18\x02 \x01(\t\x12\x0b\n\x03\x65nd\x18\x03 \x01(\x08\x12\x33\n\tanimation\x18\x04 \x01(\x0b\x32 .driveningress.v2.FlameAnimation\x12\x11\n\tavatar_id\x18\x05 \x01(\t\"!\n\x0f\x43lientInterrupt\x12\x0e\n\x06req_id\x18\x01 \x01(\t\"\x1d\n\x0b\x43lientPause\x12\x0e\n\x06req_id\x18\x01 \x01(\t\"\x1e\n\x0c\x43lientResume\x12\x0e\n\x06req_id\x18\x01 \x01(\t\"\xf0\x01\n\x13ServerPlaybackState\x12\x15\n\rconnection_id\x18\x01 \x01(\t\x12\x0e\n\x06req_id\x18\x02 \x01(\t\x12:\n\x05state\x18\x03 \x01(\x0e\x32+.driveningress.v2.ServerPlaybackState.State\x12\x11\n\tplayed_ms\x18\x04 \x01(\x03\x12\x0e\n\x06reason\x18\x05 \x01(\t\"S\n\x05State\x12\x15\n\x11STATE_UNSPECIFIED\x10\x00\x12\x0b\n\x07PLAYING\x10\x01\x12\n\n\x06PAUSED\x10\x02\x12\t\n\x05\x45NDED\x10\x03\x12\x0f\n\x0bINTERRUPTED\x10\x04\"\xd6\x05\n\x07Message\x12+\n\x04type\x18\x01 \x01(\x0e\x32\x1d.driveningress.v2.MessageType\x12L\n\x18\x63lient_configure_session\x18\x02 \x01(\x0b\x32(.driveningress.v2.ClientConfigureSessionH\x00\x12H\n\x16server_confirm_session\x18\x03 \x01(\x0b\x32&.driveningress.v2.ServerConfirmSessionH\x00\x12@\n\x12\x63lient_audio_input\x18\x04 \x01(\x0b\x32\".driveningress.v2.ClientAudioInputH\x00\x12\x35\n\x0cserver_error\x18\x05 \x01(\x0b\x32\x1d.driveningress.v2.ServerErrorH\x00\x12N\n\x19server_response_animation\x18\x06 \x01(\x0b\x32).driveningress.v2.ServerResponseAnimationH\x00\x12>\n\rdriven_config\x18\x07 \x01(\x0b\x32%.driveningress.v2.DrivenIngressConfigH\x00\x12=\n\x10\x63lient_interrupt\x18\x08 \x01(\x0b\x32!.driveningress.v2.ClientInterruptH\x00\x12\x35\n\x0c\x63lient_pause\x18\t \x01(\x0b\x32\x1d.driveningress.v2.ClientPauseH\x00\x12\x37\n\rclient_resume\x18\n \x01(\x0b\x32\x1e.driveningress.v2.ClientResumeH\x00\x12\x46\n\x15server_playback_state\x18\x0b \x01(\x0b\x32%.driveningress.v2.ServerPlaybackStateH\x00\x42\x06\n\x04\x64\x61ta*\xe9\x02\n\x0bMessageType\x12\x17\n\x13MESSAGE_UNSPECIFIED\x10\x00\x12$\n MESSAGE_CLIENT_CONFIGURE_SESSION\x10\x01\x12\"\n\x1eMESSAGE_SERVER_CONFIRM_SESSION\x10\x02\x12\x1e\n\x1aMESSAGE_CLIENT_AUDIO_INPUT\x10\x03\x12\x18\n\x14MESSAGE_SERVER_ERROR\x10\x04\x12%\n!MESSAGE_SERVER_RESPONSE_ANIMATION\x10\x05\x12 \n\x1cMESSAGE_CLIENT_DRIVEN_CONFIG\x10\x06\x12\x1c\n\x18MESSAGE_CLIENT_INTERRUPT\x10\x07\x12\x18\n\x14MESSAGE_CLIENT_PAUSE\x10\x08\x12\x19\n\x15MESSAGE_CLIENT_RESUME\x10\t\x12!\n\x1dMESSAGE_SERVER_PLAYBACK_STATE\x10\n*D\n\x0b\x41udioFormat\x12\x1a\n\x16\x41UDIO_FORMAT_PCM_S16LE\x10\x00\x12\x19\n\x15\x41UDIO_FORMAT_OGG_OPUS\x10\x01*6\n\x14TransportCompression\x12\x1e\n\x1aTRANSPORT_COMPRESSION_NONE\x10\x00*Y\n\nEgressType\x12\x1b\n\x17\x45GRESS_TYPE_UNSPECIFIED\x10\x00\x12\x17\n\x13\x45GRESS_TYPE_LIVEKIT\x10\x01\x12\x15\n\x11\x45GRESS_TYPE_AGORA\x10\x02*\xd1\x01\n\tCloseCode\x12\x1a\n\x16\x43LOSE_CODE_UNSPECIFIED\x10\x00\x12!\n\x1c\x43LOSE_CODE_CREDITS_EXHAUSTED\x10\xa1\x1f\x12\x1f\n\x1a\x43LOSE_CODE_SESSION_TIMEOUT\x10\xa2\x1f\x12!\n\x1c\x43LOSE_CODE_CONCURRENCY_LIMIT\x10\xa3\x1f\x12\x1b\n\x16\x43LOSE_CODE_AUTH_FAILED\x10\xaa\x1f\x12$\n\x1f\x43LOSE_CODE_UPSTREAM_UNAVAILABLE\x10\x97#BEZCgithub.com/SpatialReal-ai/backend-ng/api/generated/driveningress/v2b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n$driveningress/v2/driveningress.proto\x12\x10\x64riveningress.v2\x1a\x1cgoogle/protobuf/struct.proto\"\xa7\x02\n\x13LiveKitEgressConfig\x12\x0b\n\x03url\x18\x01 \x01(\t\x12\x0f\n\x07\x61pi_key\x18\x02 \x01(\t\x12\x12\n\napi_secret\x18\x03 \x01(\t\x12\x11\n\troom_name\x18\x04 \x01(\t\x12\x14\n\x0cpublisher_id\x18\x05 \x01(\t\x12T\n\x10\x65xtra_attributes\x18\x06 \x03(\x0b\x32:.driveningress.v2.LiveKitEgressConfig.ExtraAttributesEntry\x12\x14\n\x0cidle_timeout\x18\x07 \x01(\x05\x12\x11\n\tapi_token\x18\x08 \x01(\t\x1a\x36\n\x14\x45xtraAttributesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"k\n\x11\x41goraEgressConfig\x12\x14\n\x0c\x63hannel_name\x18\x01 \x01(\t\x12\r\n\x05token\x18\x02 \x01(\t\x12\x0b\n\x03uid\x18\x03 \x01(\r\x12\x14\n\x0cpublisher_id\x18\x04 \x01(\t\x12\x0e\n\x06\x61pp_id\x18\x05 \x01(\t\"\xa4\x01\n\x13\x44rivenIngressConfig\x12\x11\n\tshape_npy\x18\x01 \x01(\x0c\x12\x11\n\tstyle_npy\x18\x02 \x01(\x0c\x12\x19\n\x11\x64riven_server_url\x18\x03 \x01(\t\x12/\n\x0emodel_settings\x18\x04 \x01(\x0b\x32\x17.google.protobuf.Struct\x12\x1b\n\x13\x65ncoder_start_frame\x18\x05 \x01(\x05\"\xe7\x02\n\x16\x43lientConfigureSession\x12\x13\n\x0bsample_rate\x18\x01 \x01(\x05\x12\x0f\n\x07\x62itrate\x18\x02 \x01(\x05\x12\x33\n\x0c\x61udio_format\x18\x03 \x01(\x0e\x32\x1d.driveningress.v2.AudioFormat\x12\x45\n\x15transport_compression\x18\x04 \x01(\x0e\x32&.driveningress.v2.TransportCompression\x12\x31\n\x0b\x65gress_type\x18\x05 \x01(\x0e\x32\x1c.driveningress.v2.EgressType\x12=\n\x0elivekit_egress\x18\x06 \x01(\x0b\x32%.driveningress.v2.LiveKitEgressConfig\x12\x39\n\x0c\x61gora_egress\x18\x07 \x01(\x0b\x32#.driveningress.v2.AgoraEgressConfig\"C\n\x14ServerConfirmSession\x12\x15\n\rconnection_id\x18\x01 \x01(\t\x12\x14\n\x0c\x63\x61pabilities\x18\x02 \x03(\t\">\n\x10\x43lientAudioInput\x12\x0e\n\x06req_id\x18\x01 \x01(\t\x12\x0b\n\x03\x65nd\x18\x02 \x01(\x08\x12\r\n\x05\x61udio\x18\x03 \x01(\x0c\"S\n\x0bServerError\x12\x15\n\rconnection_id\x18\x01 \x01(\t\x12\x0e\n\x06req_id\x18\x02 \x01(\t\x12\x0c\n\x04\x63ode\x18\x03 \x01(\x05\x12\x0f\n\x07message\x18\x04 \x01(\t\"\xa6\x01\n\x05\x46lame\x12\x17\n\x0btranslation\x18\x01 \x03(\x02\x42\x02\x10\x01\x12\x14\n\x08rotation\x18\x02 \x03(\x02\x42\x02\x10\x01\x12\x15\n\tneck_pose\x18\x03 \x03(\x02\x42\x02\x10\x01\x12\x14\n\x08jaw_pose\x18\x04 \x03(\x02\x42\x02\x10\x01\x12\x14\n\x08\x65ye_pose\x18\x05 \x03(\x02\x42\x02\x10\x01\x12\x13\n\x07\x65ye_lid\x18\x06 \x03(\x02\x42\x02\x10\x01\x12\x16\n\nexpression\x18\x07 \x03(\x02\x42\x02\x10\x01\"<\n\x0e\x46lameAnimation\x12*\n\tkeyframes\x18\x01 \x03(\x0b\x32\x17.driveningress.v2.Flame\"\x95\x01\n\x17ServerResponseAnimation\x12\x15\n\rconnection_id\x18\x01 \x01(\t\x12\x0e\n\x06req_id\x18\x02 \x01(\t\x12\x0b\n\x03\x65nd\x18\x03 \x01(\x08\x12\x33\n\tanimation\x18\x04 \x01(\x0b\x32 .driveningress.v2.FlameAnimation\x12\x11\n\tavatar_id\x18\x05 \x01(\t\"!\n\x0f\x43lientInterrupt\x12\x0e\n\x06req_id\x18\x01 \x01(\t\"\x1d\n\x0b\x43lientPause\x12\x0e\n\x06req_id\x18\x01 \x01(\t\"\x1e\n\x0c\x43lientResume\x12\x0e\n\x06req_id\x18\x01 \x01(\t\"\xf0\x01\n\x13ServerPlaybackState\x12\x15\n\rconnection_id\x18\x01 \x01(\t\x12\x0e\n\x06req_id\x18\x02 \x01(\t\x12:\n\x05state\x18\x03 \x01(\x0e\x32+.driveningress.v2.ServerPlaybackState.State\x12\x11\n\tplayed_ms\x18\x04 \x01(\x03\x12\x0e\n\x06reason\x18\x05 \x01(\t\"S\n\x05State\x12\x15\n\x11STATE_UNSPECIFIED\x10\x00\x12\x0b\n\x07PLAYING\x10\x01\x12\n\n\x06PAUSED\x10\x02\x12\t\n\x05\x45NDED\x10\x03\x12\x0f\n\x0bINTERRUPTED\x10\x04\"\xd6\x05\n\x07Message\x12+\n\x04type\x18\x01 \x01(\x0e\x32\x1d.driveningress.v2.MessageType\x12L\n\x18\x63lient_configure_session\x18\x02 \x01(\x0b\x32(.driveningress.v2.ClientConfigureSessionH\x00\x12H\n\x16server_confirm_session\x18\x03 \x01(\x0b\x32&.driveningress.v2.ServerConfirmSessionH\x00\x12@\n\x12\x63lient_audio_input\x18\x04 \x01(\x0b\x32\".driveningress.v2.ClientAudioInputH\x00\x12\x35\n\x0cserver_error\x18\x05 \x01(\x0b\x32\x1d.driveningress.v2.ServerErrorH\x00\x12N\n\x19server_response_animation\x18\x06 \x01(\x0b\x32).driveningress.v2.ServerResponseAnimationH\x00\x12>\n\rdriven_config\x18\x07 \x01(\x0b\x32%.driveningress.v2.DrivenIngressConfigH\x00\x12=\n\x10\x63lient_interrupt\x18\x08 \x01(\x0b\x32!.driveningress.v2.ClientInterruptH\x00\x12\x35\n\x0c\x63lient_pause\x18\t \x01(\x0b\x32\x1d.driveningress.v2.ClientPauseH\x00\x12\x37\n\rclient_resume\x18\n \x01(\x0b\x32\x1e.driveningress.v2.ClientResumeH\x00\x12\x46\n\x15server_playback_state\x18\x0b \x01(\x0b\x32%.driveningress.v2.ServerPlaybackStateH\x00\x42\x06\n\x04\x64\x61ta*\xe9\x02\n\x0bMessageType\x12\x17\n\x13MESSAGE_UNSPECIFIED\x10\x00\x12$\n MESSAGE_CLIENT_CONFIGURE_SESSION\x10\x01\x12\"\n\x1eMESSAGE_SERVER_CONFIRM_SESSION\x10\x02\x12\x1e\n\x1aMESSAGE_CLIENT_AUDIO_INPUT\x10\x03\x12\x18\n\x14MESSAGE_SERVER_ERROR\x10\x04\x12%\n!MESSAGE_SERVER_RESPONSE_ANIMATION\x10\x05\x12 \n\x1cMESSAGE_CLIENT_DRIVEN_CONFIG\x10\x06\x12\x1c\n\x18MESSAGE_CLIENT_INTERRUPT\x10\x07\x12\x18\n\x14MESSAGE_CLIENT_PAUSE\x10\x08\x12\x19\n\x15MESSAGE_CLIENT_RESUME\x10\t\x12!\n\x1dMESSAGE_SERVER_PLAYBACK_STATE\x10\n*D\n\x0b\x41udioFormat\x12\x1a\n\x16\x41UDIO_FORMAT_PCM_S16LE\x10\x00\x12\x19\n\x15\x41UDIO_FORMAT_OGG_OPUS\x10\x01*6\n\x14TransportCompression\x12\x1e\n\x1aTRANSPORT_COMPRESSION_NONE\x10\x00*Y\n\nEgressType\x12\x1b\n\x17\x45GRESS_TYPE_UNSPECIFIED\x10\x00\x12\x17\n\x13\x45GRESS_TYPE_LIVEKIT\x10\x01\x12\x15\n\x11\x45GRESS_TYPE_AGORA\x10\x02*\xd1\x01\n\tCloseCode\x12\x1a\n\x16\x43LOSE_CODE_UNSPECIFIED\x10\x00\x12!\n\x1c\x43LOSE_CODE_CREDITS_EXHAUSTED\x10\xa1\x1f\x12\x1f\n\x1a\x43LOSE_CODE_SESSION_TIMEOUT\x10\xa2\x1f\x12!\n\x1c\x43LOSE_CODE_CONCURRENCY_LIMIT\x10\xa3\x1f\x12\x1b\n\x16\x43LOSE_CODE_AUTH_FAILED\x10\xaa\x1f\x12$\n\x1f\x43LOSE_CODE_UPSTREAM_UNAVAILABLE\x10\x97#BEZCgithub.com/SpatialReal-ai/backend-ng/api/generated/driveningress/v2b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -49,48 +49,48 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_FLAME'].fields_by_name['eye_lid']._serialized_options = b'\020\001'
   _globals['_FLAME'].fields_by_name['expression']._loaded_options = None
   _globals['_FLAME'].fields_by_name['expression']._serialized_options = b'\020\001'
-  _globals['_MESSAGETYPE']._serialized_start=2680
-  _globals['_MESSAGETYPE']._serialized_end=3041
-  _globals['_AUDIOFORMAT']._serialized_start=3043
-  _globals['_AUDIOFORMAT']._serialized_end=3111
-  _globals['_TRANSPORTCOMPRESSION']._serialized_start=3113
-  _globals['_TRANSPORTCOMPRESSION']._serialized_end=3167
-  _globals['_EGRESSTYPE']._serialized_start=3169
-  _globals['_EGRESSTYPE']._serialized_end=3258
-  _globals['_CLOSECODE']._serialized_start=3261
-  _globals['_CLOSECODE']._serialized_end=3470
+  _globals['_MESSAGETYPE']._serialized_start=2696
+  _globals['_MESSAGETYPE']._serialized_end=3057
+  _globals['_AUDIOFORMAT']._serialized_start=3059
+  _globals['_AUDIOFORMAT']._serialized_end=3127
+  _globals['_TRANSPORTCOMPRESSION']._serialized_start=3129
+  _globals['_TRANSPORTCOMPRESSION']._serialized_end=3183
+  _globals['_EGRESSTYPE']._serialized_start=3185
+  _globals['_EGRESSTYPE']._serialized_end=3274
+  _globals['_CLOSECODE']._serialized_start=3277
+  _globals['_CLOSECODE']._serialized_end=3486
   _globals['_LIVEKITEGRESSCONFIG']._serialized_start=89
   _globals['_LIVEKITEGRESSCONFIG']._serialized_end=384
   _globals['_LIVEKITEGRESSCONFIG_EXTRAATTRIBUTESENTRY']._serialized_start=330
   _globals['_LIVEKITEGRESSCONFIG_EXTRAATTRIBUTESENTRY']._serialized_end=384
   _globals['_AGORAEGRESSCONFIG']._serialized_start=386
-  _globals['_AGORAEGRESSCONFIG']._serialized_end=477
-  _globals['_DRIVENINGRESSCONFIG']._serialized_start=480
-  _globals['_DRIVENINGRESSCONFIG']._serialized_end=644
-  _globals['_CLIENTCONFIGURESESSION']._serialized_start=647
-  _globals['_CLIENTCONFIGURESESSION']._serialized_end=1006
-  _globals['_SERVERCONFIRMSESSION']._serialized_start=1008
-  _globals['_SERVERCONFIRMSESSION']._serialized_end=1075
-  _globals['_CLIENTAUDIOINPUT']._serialized_start=1077
-  _globals['_CLIENTAUDIOINPUT']._serialized_end=1139
-  _globals['_SERVERERROR']._serialized_start=1141
-  _globals['_SERVERERROR']._serialized_end=1224
-  _globals['_FLAME']._serialized_start=1227
-  _globals['_FLAME']._serialized_end=1393
-  _globals['_FLAMEANIMATION']._serialized_start=1395
-  _globals['_FLAMEANIMATION']._serialized_end=1455
-  _globals['_SERVERRESPONSEANIMATION']._serialized_start=1458
-  _globals['_SERVERRESPONSEANIMATION']._serialized_end=1607
-  _globals['_CLIENTINTERRUPT']._serialized_start=1609
-  _globals['_CLIENTINTERRUPT']._serialized_end=1642
-  _globals['_CLIENTPAUSE']._serialized_start=1644
-  _globals['_CLIENTPAUSE']._serialized_end=1673
-  _globals['_CLIENTRESUME']._serialized_start=1675
-  _globals['_CLIENTRESUME']._serialized_end=1705
-  _globals['_SERVERPLAYBACKSTATE']._serialized_start=1708
-  _globals['_SERVERPLAYBACKSTATE']._serialized_end=1948
-  _globals['_SERVERPLAYBACKSTATE_STATE']._serialized_start=1865
-  _globals['_SERVERPLAYBACKSTATE_STATE']._serialized_end=1948
-  _globals['_MESSAGE']._serialized_start=1951
-  _globals['_MESSAGE']._serialized_end=2677
+  _globals['_AGORAEGRESSCONFIG']._serialized_end=493
+  _globals['_DRIVENINGRESSCONFIG']._serialized_start=496
+  _globals['_DRIVENINGRESSCONFIG']._serialized_end=660
+  _globals['_CLIENTCONFIGURESESSION']._serialized_start=663
+  _globals['_CLIENTCONFIGURESESSION']._serialized_end=1022
+  _globals['_SERVERCONFIRMSESSION']._serialized_start=1024
+  _globals['_SERVERCONFIRMSESSION']._serialized_end=1091
+  _globals['_CLIENTAUDIOINPUT']._serialized_start=1093
+  _globals['_CLIENTAUDIOINPUT']._serialized_end=1155
+  _globals['_SERVERERROR']._serialized_start=1157
+  _globals['_SERVERERROR']._serialized_end=1240
+  _globals['_FLAME']._serialized_start=1243
+  _globals['_FLAME']._serialized_end=1409
+  _globals['_FLAMEANIMATION']._serialized_start=1411
+  _globals['_FLAMEANIMATION']._serialized_end=1471
+  _globals['_SERVERRESPONSEANIMATION']._serialized_start=1474
+  _globals['_SERVERRESPONSEANIMATION']._serialized_end=1623
+  _globals['_CLIENTINTERRUPT']._serialized_start=1625
+  _globals['_CLIENTINTERRUPT']._serialized_end=1658
+  _globals['_CLIENTPAUSE']._serialized_start=1660
+  _globals['_CLIENTPAUSE']._serialized_end=1689
+  _globals['_CLIENTRESUME']._serialized_start=1691
+  _globals['_CLIENTRESUME']._serialized_end=1721
+  _globals['_SERVERPLAYBACKSTATE']._serialized_start=1724
+  _globals['_SERVERPLAYBACKSTATE']._serialized_end=1964
+  _globals['_SERVERPLAYBACKSTATE_STATE']._serialized_start=1881
+  _globals['_SERVERPLAYBACKSTATE_STATE']._serialized_end=1964
+  _globals['_MESSAGE']._serialized_start=1967
+  _globals['_MESSAGE']._serialized_end=2693
 # @@protoc_insertion_point(module_scope)
