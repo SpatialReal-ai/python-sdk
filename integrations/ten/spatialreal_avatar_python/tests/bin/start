@@ -1,0 +1,5 @@
+#!/bin/bash
+# TEN 包约定的测试入口(tman run test)。桥接逻辑不依赖 ten_runtime,测试放在包外的 ../tests,直接 pytest。
+set -e
+cd "$(dirname "${BASH_SOURCE[0]}")/../.."
+python3 -m pytest ../tests -q
