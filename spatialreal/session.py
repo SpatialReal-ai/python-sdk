@@ -237,6 +237,7 @@ class AvatarSession:
             s.agora_egress.token = ag.token
             s.agora_egress.uid = ag.uid
             s.agora_egress.publisher_id = ag.publisher_id
+            s.agora_egress.app_id = ag.app_id
 
         try:
             await self._connection.send(msg.SerializeToString())
