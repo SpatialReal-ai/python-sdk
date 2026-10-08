@@ -52,6 +52,10 @@ class AgoraEgressConfig:
     token: str = field(default="", repr=False)
     uid: int = 0
     publisher_id: str = ""
+    # Agora App ID the token was minted for. The egress worker serves one Agora project;
+    # when set and different, the server refuses the session with a clear error instead
+    # of the SDK failing on the token. Empty = use the egress worker's project.
+    app_id: str = ""
 
 
 @dataclass
