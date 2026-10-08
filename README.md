@@ -93,3 +93,7 @@ python -m pytest tests -q     # protocol-level tests against an in-process fake 
 ## License
 
 Apache-2.0
+
+## Integrations
+
+- `integrations/ten/spatialreal_avatar_python`: TEN Framework avatar extension (TTS audio in, avatar published into the Agora channel via egress). See its README for the graph wiring and the two prerequisites (egress Agora App ID, frontend rendering).

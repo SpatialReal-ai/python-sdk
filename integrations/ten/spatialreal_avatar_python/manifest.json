@@ -1,0 +1,63 @@
+{
+  "type": "extension",
+  "name": "spatialreal_avatar_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "README.md",
+      "pyproject.toml",
+      "requirements.txt"
+    ]
+  },
+  "api": {
+    "property": {
+      "properties": {
+        "spatialreal_app_id": { "type": "string" },
+        "spatialreal_api_key": { "type": "string" },
+        "spatialreal_avatar_id": { "type": "string" },
+        "spatialreal_environment": { "type": "string" },
+        "spatialreal_console_endpoint": { "type": "string" },
+        "spatialreal_ingress_endpoint": { "type": "string" },
+        "agora_appid": { "type": "string" },
+        "agora_appcert": { "type": "string" },
+        "agora_channel_name": { "type": "string" },
+        "agora_avatar_uid": { "type": "int64" },
+        "input_audio_sample_rate": { "type": "int64" },
+        "segment_idle_end_ms": { "type": "int64" }
+      }
+    },
+    "audio_frame_in": [
+      { "name": "pcm_frame" }
+    ],
+    "data_in": [
+      {
+        "name": "tts_audio_end",
+        "property": {
+          "properties": {
+            "reason": { "type": "int64" },
+            "request_id": { "type": "string" }
+          }
+        }
+      }
+    ],
+    "cmd_in": [
+      { "name": "flush" }
+    ],
+    "cmd_out": [
+      { "name": "flush" }
+    ]
+  },
+  "scripts": {
+    "test": "tests/bin/start"
+  }
+}
