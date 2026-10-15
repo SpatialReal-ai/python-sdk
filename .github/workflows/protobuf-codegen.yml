@@ -1,7 +1,6 @@
 name: Protobuf Codegen
 
-# Syncs the driveningress contract from SpatialReal-ai/shared-proto into proto/, regenerates
-# spatialreal/proto/generated/ with scripts/gen_proto.sh, and commits both once the gate passes.
+# Regenerates spatialreal/proto/generated/ and commits it once the gate passes.
 #
 # Trigger: shared-proto's tag CI dispatches this workflow; it can also be run by hand here.
 # Pushes and PRs do not trigger it: the contract is released only when shared-proto is tagged.
@@ -9,10 +8,6 @@ name: Protobuf Codegen
 #
 # Auth: the org GitHub App `spatialreal-codegen` (secrets CODEGEN_APP_ID /
 # CODEGEN_APP_PRIVATE_KEY), not a personal token. The App installation must include this repo.
-#
-# proto/ is a committed, read-only copy of the contract that the generated code is built from;
-# proto/SHARED_PROTO_COMMIT records which shared-proto commit it came from. A manual sync (when
-# Actions is down) does the same steps by hand and commits both — see CLAUDE.md "Contracts (proto)".
 
 on:
   workflow_dispatch:
@@ -50,51 +45,53 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           path: proto-src
 
-      # Replace the vendored contract file, then record the exact commit it came from.
-      # driveningress.proto imports only google/protobuf/struct.proto (a well-known type protoc
-      # ships), so this one file is the whole build input — no other .proto is copied.
-      - name: Sync vendored proto
-        id: sync
-        run: |
-          echo "sha=$(git -C proto-src rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          echo "short_sha=$(git -C proto-src rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
-          cp proto-src/driveningress/v2/driveningress.proto proto/driveningress/v2/driveningress.proto
-          git -C proto-src rev-parse HEAD > proto/SHARED_PROTO_COMMIT
-          rm -rf proto-src
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
 
-      # grpcio-tools is pinned in the dev extra; it decides the gencode protobuf version, which
-      # must stay <= the runtime protobuf the SDK is installed alongside (see scripts/gen_proto.sh).
+      # grpcio-tools is pinned in the dev extra: it decides the gencode protobuf version, which
+      # must stay <= the runtime protobuf the SDK is installed alongside (livekit-agents venvs run
+      # protobuf 6.x). Bump it only in a commit of its own.
       - name: Install (dev extra)
         run: python -m pip install -e ".[dev]"
 
       - name: Generate
+        id: gen
         run: |
-          ./scripts/gen_proto.sh
-          test -f spatialreal/proto/generated/message_pb2.py
-          git status --short proto spatialreal/proto/generated
+          echo "short_sha=$(git -C proto-src rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          out="$(mktemp -d)"
+          python -m grpc_tools.protoc -I proto-src/clients/python-sdk \
+            --python_out="$out" --pyi_out="$out" driveningress/v2/driveningress.proto
+          mv "$out/driveningress/v2/driveningress_pb2.py" spatialreal/proto/generated/message_pb2.py
+          mv "$out/driveningress/v2/driveningress_pb2.pyi" spatialreal/proto/generated/message_pb2.pyi
+          rm -rf proto-src "$out"
+          git status --short spatialreal/proto/generated
 
       # Gate: the package still imports (the generated module loads against the installed protobuf
       # runtime) and the protocol tests pass. A failure usually means SDK code relies on something
-      # the contract no longer has — fix the SDK (or the contract in shared-proto) first, then re-run.
+      # the generated code no longer has — fix that first, then re-run.
       - name: Gate — import smoke test
         run: python -c "import spatialreal"
 
       - name: Gate — unit tests
         run: python -m pytest tests -q
 
+      - name: Gate — generated code only
+        run: |
+          if git ls-files --others --cached --exclude-standard '*.proto' | grep .; then
+            echo "Only generated code is committed here." >&2
+            exit 1
+          fi
+
       - name: Commit and push
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add proto spatialreal/proto/generated
+          git add spatialreal/proto/generated
           if git diff --staged --quiet; then
             echo "No changes."
             exit 0
           fi
-          git commit -m "chore(proto): sync from shared-proto@${{ inputs.shared_proto_ref || 'main' }} (${{ steps.sync.outputs.short_sha }})"
+          git commit -m "chore(proto): regenerate from shared-proto@${{ inputs.shared_proto_ref || 'main' }} (${{ steps.gen.outputs.short_sha }})"
           git push
