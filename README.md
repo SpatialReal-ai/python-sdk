@@ -87,7 +87,6 @@ implements the server's WebSocket close-code contract (40xx: don't retry,
 ```bash
 uv venv && uv pip install -e ".[dev]"
 python -m pytest tests -q     # protocol-level tests against an in-process fake backend
-./scripts/gen_proto.sh        # regenerate protobuf from proto/ (see proto/SHARED_PROTO_COMMIT)
 ```
 
 ## License

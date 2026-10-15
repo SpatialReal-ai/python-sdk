@@ -42,7 +42,7 @@ path = "spatialreal/version.py"
 packages = ["spatialreal"]
 
 [tool.hatch.build.targets.sdist]
-include = ["/spatialreal", "/proto"]
+include = ["/spatialreal"]
 
 [tool.ruff]
 target-version = "py310"

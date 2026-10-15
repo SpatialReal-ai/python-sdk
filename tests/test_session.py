@@ -276,6 +276,56 @@ async def test_playback_callbacks_structured_and_raw():
     assert [last for _, last in got_frames] == [False, True]
 
 
+# Animation frames as the server sends them: they must parse, and reach transport_frames
+# byte for byte.
+SERVER_FRAME_WITH_KEYFRAMES = bytes.fromhex(
+    "080532c8010a06636f6e6e2d3112057265712d3122ac010a540a0c00000000cdcc4c3e9a99993e120c00000000"
+    "cdcccc3dcdcc4c3e220c0000000000000000000000003a28000000000ad7233c0ad7a33c8fc2f53c0ad7233dcdcc"
+    "4c3d8fc2753d295c8f3d0ad7a33dec51b83d0a540a0ccdcccc3dcdcc4c3e9a99993e120c00000000cdcccc3dcdcc"
+    "4c3e220ccdcc4c3d00000000000000003a28000000000ad7233c0ad7a33c8fc2f53c0ad7233dcdcc4c3d8fc2753d"
+    "295c8f3d0ad7a33dec51b83d2a086176617461722d31"
+)
+SERVER_FRAME_NO_KEYFRAMES = bytes.fromhex("0805321b0a06636f6e6e2d3112057265712d3118012a086176617461722d31")
+
+
+def test_server_animation_frames_parse_without_loss():
+    for raw in (SERVER_FRAME_WITH_KEYFRAMES, SERVER_FRAME_NO_KEYFRAMES):
+        envelope = message_pb2.Message.FromString(raw)
+        assert envelope.type == message_pb2.MESSAGE_SERVER_RESPONSE_ANIMATION
+        assert envelope.SerializeToString() == raw
+
+    anim = message_pb2.Message.FromString(SERVER_FRAME_WITH_KEYFRAMES).server_response_animation
+    assert (anim.connection_id, anim.req_id, anim.end, anim.avatar_id) == ("conn-1", "req-1", False, "avatar-1")
+    assert len(anim.animation) > 0
+    assert len(message_pb2.Message.FromString(SERVER_FRAME_NO_KEYFRAMES).server_response_animation.animation) == 0
+
+
+async def test_server_animation_frames_signal_and_pass_through_unchanged():
+    got_signals = []
+    got_frames = []
+
+    async def script(backend, ws):
+        await ws.send(SERVER_FRAME_WITH_KEYFRAMES)
+        await ws.send(SERVER_FRAME_NO_KEYFRAMES)
+        await asyncio.sleep(0.2)
+
+    async with FakeBackend() as backend:
+        backend.script = script
+        session = make_session(
+            backend,
+            on_playback=got_signals.append,
+            transport_frames=lambda frame, is_last: got_frames.append((frame, is_last)),
+        )
+        await session.init()
+        await session.start()
+        await asyncio.sleep(0.3)
+        await session.close()
+
+    assert [(s.req_id, s.end, s.has_animation) for s in got_signals] == [("req-1", False, True), ("req-1", True, False)]
+    assert got_signals[0].avatar_id == "avatar-1"
+    assert got_frames == [(SERVER_FRAME_WITH_KEYFRAMES, False), (SERVER_FRAME_NO_KEYFRAMES, True)]
+
+
 async def test_unknown_message_types_are_ignored():
     errors = []
 

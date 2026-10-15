@@ -471,7 +471,8 @@ class AvatarSession:
                     end=bool(anim.end),
                     connection_id=anim.connection_id,
                     avatar_id=anim.avatar_id,
-                    has_animation=len(anim.animation.keyframes) > 0,
+                    # The animation payload is opaque here; empty means the frame carries none.
+                    has_animation=len(anim.animation) > 0,
                 )
                 try:
                     self._config.on_playback(signal)
