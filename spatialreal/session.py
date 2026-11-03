@@ -155,8 +155,6 @@ class AvatarSession:
             raise ValueError("Session not initialized (call init() first)")
         if not self._config.avatar_id:
             raise ValueError("Missing avatar ID")
-        if not self._config.app_id:
-            raise ValueError("Missing app ID")
         if self._config.livekit_egress is not None and self._config.agora_egress is not None:
             raise ValueError("Cannot configure both livekit_egress and agora_egress")
 
@@ -192,12 +190,17 @@ class AvatarSession:
 
         query = parse_qs(parsed.query)
         query["id"] = [self._config.avatar_id]
+        # The app is derived server-side from the API key; ``app_id`` is optional and only
+        # forwarded when set (the server ignores an absent X-App-ID / appId).
         headers: dict[str, str] = {}
         if self._config.use_query_auth:
-            query["appId"] = [self._config.app_id]
+            if self._config.app_id:
+                query["appId"] = [self._config.app_id]
             query["sessionKey"] = [self._session_token or ""]
         else:
-            headers = {"X-App-ID": self._config.app_id, "X-Session-Key": self._session_token or ""}
+            headers = {"X-Session-Key": self._session_token or ""}
+            if self._config.app_id:
+                headers["X-App-ID"] = self._config.app_id
 
         return (
             urlunparse((ws_scheme, parsed.netloc, parsed.path, parsed.params, urlencode(query, doseq=True), "")),

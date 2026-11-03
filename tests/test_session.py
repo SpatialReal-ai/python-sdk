@@ -555,3 +555,14 @@ async def test_playback_state_ignored_without_callback():
     # no on_playback_state handler: the message is silently ignored, others still flow
     assert errors == []
     assert [s.req_id for s in signals] == ["req-A"]
+
+
+async def test_app_id_is_optional_and_omitted_from_handshake():
+    async with FakeBackend() as backend:
+        session = make_session(backend, app_id="")
+        await session.init()
+        assert await session.start() == "conn-1"
+        # the app is derived from the API key server-side; nothing is sent for an empty app_id
+        assert "x-app-id" not in backend.ws_headers
+        assert backend.ws_headers.get("x-session-key") == "tok-123"
+        await session.close()

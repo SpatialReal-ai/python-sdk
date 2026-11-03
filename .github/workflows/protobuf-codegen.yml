@@ -51,8 +51,9 @@ jobs:
           cache: pip
 
       # grpcio-tools is pinned in the dev extra: it decides the gencode protobuf version, which
-      # must stay <= the runtime protobuf the SDK is installed alongside (livekit-agents venvs run
-      # protobuf 6.x). Bump it only in a commit of its own.
+      # must stay <= the runtime protobuf the SDK is installed alongside. 1.71.2 emits gencode
+      # 5.29.0, which imports under protobuf 5.29.x (TEN Framework agent images pin 5.x) and
+      # under 6.x/7.x (livekit-agents venvs). Bump it only in a commit of its own.
       - name: Install (dev extra)
         run: python -m pip install -e ".[dev]"
 
