@@ -24,6 +24,7 @@ from .config import (
     AgoraEgressConfig,
     AudioFormat,
     LiveKitEgressConfig,
+    RtcSourcePlaybackProfile,
     SessionConfig,
 )
 from .errors import AvatarSDKError, AvatarSDKErrorCode, CloseCode, SessionTokenError, UnsupportedConfigurationError
@@ -40,6 +41,7 @@ __all__ = [
     "AvatarSession",
     "CloseCode",
     "LiveKitEgressConfig",
+    "RtcSourcePlaybackProfile",
     "PlaybackSignal",
     "PlaybackStateEvent",
     "PlaybackState",

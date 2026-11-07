@@ -44,6 +44,22 @@ mode is requested. A confirmation without it raises `UnsupportedConfigurationErr
 before audio is sent. A standard WebSocket policy rejection (`1008`) is also not
 retryable. Other transport failures retain their normal retry behavior.
 
+For the coordinated bounded-burst profile, also set
+`source_playback_profile=RtcSourcePlaybackProfile.BOUNDED_BURST_V1` (import the
+enum from `spatialreal`). It requires `source_timeline_only=True` and both
+`agora_source_timeline_only` and `agora_source_burst_v1` in the server's actual
+confirmation. `session.capabilities` is the read-only tuple from that handshake.
+Missing acceptance closes the connection before the read loop or audio starts;
+there is no silent fallback. The default `UNSPECIFIED`/0 is omitted on the wire
+and retains existing behavior. Unknown values and booleans are rejected.
+
+Every animation viewer must independently opt into the same profile using a
+compatible viewer SDK; the publisher's handshake cannot negotiate room viewers.
+The profile contract is not released yet. Generated types are a local bridge
+from the authored shared-proto change; merge and tag propagation remain pending.
+See [the code-generation receipt](docs/source-burst-codegen.json). No PyPI release
+or deployment is implied by this change.
+
 ### Pause / resume (egress mode)
 
 When the server declares the `playback_control` capability, the current

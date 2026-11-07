@@ -1,0 +1,17 @@
+{
+  "method": "local grpc_tools.protoc; no remote generator or upload",
+  "python": "3.10.0",
+  "grpcio_tools": "1.71.2",
+  "protobuf": "5.29.6",
+  "protoc": "libprotoc 29.0",
+  "source_repository": "SpatialReal-ai/shared-proto",
+  "source_branch": "fix/agora-source-burst-profile",
+  "source_base_commit": "6a0b85500e9e54c814daa47245061aad6405fcfa",
+  "source_path": "clients/python-sdk/driveningress/v2/driveningress.proto",
+  "input_sha256": "7f177efea3d9d3a02d3e62082c26425bdbc057eeefb56cb32a6c5e87202276e2",
+  "source_status": "authored uncommitted contract; merge and release tag pending",
+  "outputs": {
+    "spatialreal/proto/generated/message_pb2.py": "52962fa060a8a092e072a8173d1681fb06e4e3d085ef374901ed3727a0415dbb",
+    "spatialreal/proto/generated/message_pb2.pyi": "cd538ac255fcde56fcd72db37dc130c7df30b0aeaeef7e6dda0f910fe78779f0"
+  }
+}
