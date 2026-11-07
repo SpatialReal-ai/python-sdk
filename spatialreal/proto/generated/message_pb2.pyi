@@ -78,16 +78,18 @@ class LiveKitEgressConfig(_message.Message):
     def __init__(self, url: _Optional[str] = ..., api_key: _Optional[str] = ..., api_secret: _Optional[str] = ..., room_name: _Optional[str] = ..., publisher_id: _Optional[str] = ..., extra_attributes: _Optional[_Mapping[str, str]] = ..., idle_timeout: _Optional[int] = ..., api_token: _Optional[str] = ...) -> None: ...
 
 class AgoraEgressConfig(_message.Message):
-    __slots__ = ("channel_name", "token", "uid", "publisher_id")
+    __slots__ = ("channel_name", "token", "uid", "publisher_id", "source_timeline_only")
     CHANNEL_NAME_FIELD_NUMBER: _ClassVar[int]
     TOKEN_FIELD_NUMBER: _ClassVar[int]
     UID_FIELD_NUMBER: _ClassVar[int]
     PUBLISHER_ID_FIELD_NUMBER: _ClassVar[int]
+    SOURCE_TIMELINE_ONLY_FIELD_NUMBER: _ClassVar[int]
     channel_name: str
     token: str
     uid: int
     publisher_id: str
-    def __init__(self, channel_name: _Optional[str] = ..., token: _Optional[str] = ..., uid: _Optional[int] = ..., publisher_id: _Optional[str] = ...) -> None: ...
+    source_timeline_only: bool
+    def __init__(self, channel_name: _Optional[str] = ..., token: _Optional[str] = ..., uid: _Optional[int] = ..., publisher_id: _Optional[str] = ..., source_timeline_only: bool = ...) -> None: ...
 
 class ClientConfigureSession(_message.Message):
     __slots__ = ("sample_rate", "bitrate", "audio_format", "transport_compression", "egress_type", "livekit_egress", "agora_egress")
