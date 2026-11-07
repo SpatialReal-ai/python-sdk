@@ -26,7 +26,7 @@ from .config import (
     LiveKitEgressConfig,
     SessionConfig,
 )
-from .errors import AvatarSDKError, AvatarSDKErrorCode, CloseCode, SessionTokenError
+from .errors import AvatarSDKError, AvatarSDKErrorCode, CloseCode, SessionTokenError, UnsupportedConfigurationError
 from .events import InterruptReason, PlaybackSignal, PlaybackState, PlaybackStateEvent
 from .logid import generate_log_id
 from .session import AvatarSession, new_avatar_session
@@ -46,6 +46,7 @@ __all__ = [
     "InterruptReason",
     "SessionConfig",
     "SessionTokenError",
+    "UnsupportedConfigurationError",
     "__version__",
     "generate_log_id",
     "new_avatar_session",

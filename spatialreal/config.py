@@ -52,6 +52,13 @@ class AgoraEgressConfig:
     token: str = field(default="", repr=False)
     uid: int = 0
     publisher_id: str = ""
+    # Only for viewers that play source-timeline audio and manage entry locally.
+    # The server must explicitly acknowledge this mode during the handshake.
+    source_timeline_only: bool = False
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.source_timeline_only, bool):
+            raise ValueError("source_timeline_only must be a boolean")
 
 
 @dataclass

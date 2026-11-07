@@ -12,6 +12,8 @@ from __future__ import annotations
 
 from enum import Enum, IntEnum
 
+from websockets.frames import CloseCode as WebSocketCloseCode
+
 
 class AvatarSDKErrorCode(str, Enum):
     """Stable, log-friendly error codes surfaced by the SDK."""
@@ -117,12 +119,30 @@ class AvatarSDKError(Exception):
             )
         if self.close_code in _RETRYABLE_CLOSE_CODES:
             return True
+        if self.close_code == WebSocketCloseCode.POLICY_VIOLATION:
+            return False
         if 4000 <= self.close_code < 4500:
             return False
         return True
 
     def __str__(self) -> str:  # pragma: no cover
         return f"{self.code.value}: {self.message}"
+
+
+class UnsupportedConfigurationError(AvatarSDKError):
+    """The server confirmed a session without accepting a required mode.
+
+    This is a local handshake classification, not a new wire error code.
+    Retrying the same configuration cannot negotiate the missing capability.
+    """
+
+    def __init__(self, message: str, *, connection_id: str | None = None):
+        super().__init__(
+            code=AvatarSDKErrorCode.protocolError,
+            message=message,
+            phase="websocket_handshake",
+            connection_id=connection_id,
+        )
 
 
 class SessionTokenError(AvatarSDKError):
