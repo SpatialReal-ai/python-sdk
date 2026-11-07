@@ -45,6 +45,7 @@ INGRESS_WEBSOCKET_PATH = "/websocket"
 # the authoritative standard close. Bound the wait; no close retains the error.
 CONFIGURE_CLOSE_GRACE_SECONDS = 1.0
 _SOURCE_TIMELINE_CAPABILITY = "agora_source_timeline_only"
+_SOURCE_BURST_CAPABILITY = "agora_source_burst_v1"
 
 logger = logging.getLogger(__name__)
 
@@ -246,6 +247,7 @@ class AvatarSession:
             s.agora_egress.uid = ag.uid
             s.agora_egress.publisher_id = ag.publisher_id
             s.agora_egress.source_timeline_only = ag.source_timeline_only
+            s.agora_egress.source_playback_profile = ag.source_playback_profile
 
         try:
             await self._connection.send(msg.SerializeToString())
@@ -293,6 +295,15 @@ class AvatarSession:
             ):
                 raise UnsupportedConfigurationError(
                     "Server did not accept the requested Agora source-timeline-only mode",
+                    connection_id=confirm.connection_id,
+                )
+            if (
+                self._config.agora_egress is not None
+                and self._config.agora_egress.source_playback_profile
+                and _SOURCE_BURST_CAPABILITY not in self._capabilities
+            ):
+                raise UnsupportedConfigurationError(
+                    "Server did not accept the requested Agora source playback profile",
                     connection_id=confirm.connection_id,
                 )
             return confirm.connection_id

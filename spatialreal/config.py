@@ -5,10 +5,18 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
+from enum import Enum, IntEnum
 
 from .environments import DEFAULT_ENVIRONMENT
 from .events import PlaybackSignal, PlaybackStateEvent
+from .proto.generated import message_pb2
+
+
+class RtcSourcePlaybackProfile(IntEnum):
+    """Explicit source playback contract; independent RTC viewers must also opt in."""
+
+    UNSPECIFIED = message_pb2.RTC_SOURCE_PLAYBACK_PROFILE_UNSPECIFIED
+    BOUNDED_BURST_V1 = message_pb2.RTC_SOURCE_PLAYBACK_PROFILE_BOUNDED_BURST_V1
 
 
 class AudioFormat(str, Enum):
@@ -55,10 +63,19 @@ class AgoraEgressConfig:
     # Only for viewers that play source-timeline audio and manage entry locally.
     # The server must explicitly acknowledge this mode during the handshake.
     source_timeline_only: bool = False
+    source_playback_profile: RtcSourcePlaybackProfile = RtcSourcePlaybackProfile.UNSPECIFIED
 
     def __post_init__(self) -> None:
         if not isinstance(self.source_timeline_only, bool):
             raise ValueError("source_timeline_only must be a boolean")
+        if isinstance(self.source_playback_profile, bool) or not isinstance(self.source_playback_profile, int):
+            raise ValueError("source_playback_profile must be a known RtcSourcePlaybackProfile")
+        try:
+            self.source_playback_profile = RtcSourcePlaybackProfile(self.source_playback_profile)
+        except ValueError as exc:
+            raise ValueError("source_playback_profile must be a known RtcSourcePlaybackProfile") from exc
+        if self.source_playback_profile and not self.source_timeline_only:
+            raise ValueError("source_playback_profile requires source_timeline_only=True")
 
 
 @dataclass
