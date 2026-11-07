@@ -31,6 +31,19 @@ await session.interrupt()  # interrupts the latest request
 await session.close()
 ```
 
+### Agora source-timeline-only viewers
+
+Set `AgoraEgressConfig(source_timeline_only=True, ...)` only when every viewer
+plays the source-timeline audio and manages its own entry transition. The default
+is `False`, which retains the existing RTC delivery policy. This setting does not
+change input sample rates or audio data.
+
+`start()` requires the server's `agora_source_timeline_only` capability when this
+mode is requested. A confirmation without it raises `UnsupportedConfigurationError`
+(`protocolError`, `websocket_handshake`, not retryable) and closes the connection
+before audio is sent. A standard WebSocket policy rejection (`1008`) is also not
+retryable. Other transport failures retain their normal retry behavior.
+
 ### Pause / resume (egress mode)
 
 When the server declares the `playback_control` capability, the current
