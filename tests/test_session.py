@@ -12,6 +12,7 @@ import websockets
 from aiohttp import web
 
 from spatialreal import (
+    AgoraEgressConfig,
     AvatarSDKError,
     AvatarSDKErrorCode,
     CloseCode,
@@ -40,6 +41,8 @@ class FakeBackend:
         self.configure: message_pb2.ClientConfigureSession | None = None
         self.ws_headers: dict[str, str] = {}
         self.handshake_reply = None  # None = normal confirm
+        self.handshake_followup = None
+        self.capabilities: list[str] = []
         self.console_url = ""
         self.token_paths: list[str] = []
         self.ingress_url = ""
@@ -85,11 +88,14 @@ class FakeBackend:
 
         if self.handshake_reply is not None:
             await ws.send(self.handshake_reply.SerializeToString())
+            if self.handshake_followup is not None:
+                await self.handshake_followup(ws)
             return
 
         confirm = message_pb2.Message()
         confirm.type = message_pb2.MESSAGE_SERVER_CONFIRM_SESSION
         confirm.server_confirm_session.connection_id = "conn-1"
+        confirm.server_confirm_session.capabilities.extend(self.capabilities)
         await ws.send(confirm.SerializeToString())
 
         if self.script is not None:
@@ -198,6 +204,118 @@ async def test_start_rejected_by_server_error():
         assert exc.value.code == AvatarSDKErrorCode.sessionTokenInvalid
         assert exc.value.retryable is False
         assert session._connection is None  # cleaned up
+
+
+@pytest.mark.parametrize("explicit_false", [False, True])
+async def test_agora_source_timeline_default_preserves_legacy_handshake(explicit_false):
+    async with FakeBackend() as backend:
+        options = {"source_timeline_only": False} if explicit_false else {}
+        session = make_session(backend, agora_egress=AgoraEgressConfig(channel_name="room", **options))
+        await session.init()
+        assert await session.start() == "conn-1"
+        config = backend.configure.agora_egress
+        assert config.source_timeline_only is False
+        assert "source_timeline_only" not in {field.name for field, _ in config.ListFields()}
+        await session.close()
+
+
+async def test_agora_source_timeline_requires_matching_server_confirmation():
+    async with FakeBackend() as backend:
+        backend.capabilities = ["agora_source_timeline_only"]
+        session = make_session(backend, agora_egress=AgoraEgressConfig(channel_name="room", source_timeline_only=True))
+        await session.init()
+        assert await session.start() == "conn-1"
+        config = backend.configure.agora_egress
+        assert config.source_timeline_only is True
+        assert config.DESCRIPTOR.fields_by_name["source_timeline_only"].number == 6
+        assert "agora_source_timeline_only" in session.capabilities
+        await session.send_audio(b"\x01\x02", end=True)
+        await session.close()
+
+
+@pytest.mark.parametrize("capabilities", [[], ["playback_control"]])
+async def test_agora_source_timeline_missing_confirmation_closes_without_audio(capabilities):
+    async with FakeBackend() as backend:
+        backend.capabilities = capabilities
+        session = make_session(backend, agora_egress=AgoraEgressConfig(channel_name="room", source_timeline_only=True))
+        await session.init()
+        with pytest.raises(AvatarSDKError) as exc:
+            await session.start()
+        assert exc.value.code == AvatarSDKErrorCode.protocolError
+        assert exc.value.phase == "websocket_handshake"
+        assert exc.value.retryable is False
+        assert session._connection is None
+        assert session._read_task is None
+        assert backend.received == []
+
+
+@pytest.mark.parametrize("invalid", [None, "true", "false", 0, 1, {}, []])
+def test_agora_source_timeline_requires_a_boolean(invalid):
+    with pytest.raises(ValueError, match="source_timeline_only"):
+        AgoraEgressConfig(source_timeline_only=invalid)
+
+
+async def test_agora_source_timeline_server_error_then_policy_close_is_not_retryable():
+    async with FakeBackend() as backend:
+
+        async def reject_configuration(ws):
+            raw = await ws.recv()
+            configure = message_pb2.Message.FromString(raw)
+            assert configure.client_configure_session.agora_egress.source_timeline_only
+            error = message_pb2.Message(type=message_pb2.MESSAGE_SERVER_ERROR)
+            error.server_error.code = 0
+            await ws.send(error.SerializeToString())
+            # The error envelope has no session-fate close code. The next
+            # standard close is the authoritative policy rejection.
+            await ws.close(code=1008, reason="configuration unsupported")
+
+        backend._ws_server.close()
+        await backend._ws_server.wait_closed()
+        backend._ws_server = await websockets.serve(reject_configuration, "127.0.0.1", 0)
+        port = backend._ws_server.sockets[0].getsockname()[1]
+        backend.ingress_url = f"http://127.0.0.1:{port}"
+        session = make_session(backend, agora_egress=AgoraEgressConfig(channel_name="room", source_timeline_only=True))
+        await session.init()
+        with pytest.raises(AvatarSDKError) as exc:
+            await session.start()
+        assert exc.value.server_code == "0"
+        assert exc.value.close_code == 1008
+        assert exc.value.retryable is False
+        assert session._connection is None
+        assert session._read_task is None
+
+
+async def test_agora_source_timeline_genuine_upstream_failure_still_retryable():
+    async with FakeBackend() as backend:
+        error = message_pb2.Message(type=message_pb2.MESSAGE_SERVER_ERROR)
+        error.server_error.code = int(CloseCode.UPSTREAM_UNAVAILABLE)
+        backend.handshake_reply = error
+        session = make_session(backend, agora_egress=AgoraEgressConfig(source_timeline_only=True))
+        await session.init()
+        with pytest.raises(AvatarSDKError) as exc:
+            await session.start()
+        assert exc.value.close_code == 4503
+        assert exc.value.retryable is True
+        assert session._connection is None
+
+
+async def test_agora_source_timeline_error_without_close_retains_original_error(monkeypatch):
+    from spatialreal import session as session_module
+
+    monkeypatch.setattr(session_module, "CONFIGURE_CLOSE_GRACE_SECONDS", 0.01)
+    async with FakeBackend() as backend:
+        error = message_pb2.Message(type=message_pb2.MESSAGE_SERVER_ERROR)
+        error.server_error.code = 0
+        backend.handshake_reply = error
+        backend.handshake_followup = lambda ws: ws.wait_closed()
+        session = make_session(backend, agora_egress=AgoraEgressConfig(source_timeline_only=True))
+        await session.init()
+        with pytest.raises(AvatarSDKError) as exc:
+            await asyncio.wait_for(session.start(), timeout=0.5)
+        assert exc.value.code == AvatarSDKErrorCode.serverError
+        assert exc.value.server_code == "0"
+        assert exc.value.close_code is None
+        assert session._connection is None
 
 
 # --------------------------------------------------------------- audio + ids

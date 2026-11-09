@@ -27,6 +27,7 @@ from .errors import (
     AvatarSDKError,
     AvatarSDKErrorCode,
     SessionTokenError,
+    UnsupportedConfigurationError,
     error_code_for_close_code,
 )
 from .events import PlaybackSignal, PlaybackState, PlaybackStateEvent
@@ -40,6 +41,11 @@ SESSION_TOKEN_PATH = "/v1/auth/session-token"
 LEGACY_CONSOLE_SUFFIX = "/v1/console"
 DRIVENINGRESS_PATH = "/v2/driveningress"
 INGRESS_WEBSOCKET_PATH = "/websocket"
+# A configuration rejection may carry an unclassified ServerError followed by
+# the authoritative standard close. Bound the wait; no close retains the error.
+CONFIGURE_CLOSE_GRACE_SECONDS = 1.0
+_SOURCE_TIMELINE_CAPABILITY = "agora_source_timeline_only"
+_SOURCE_BURST_CAPABILITY = "agora_source_burst_v1"
 
 logger = logging.getLogger(__name__)
 
@@ -240,6 +246,8 @@ class AvatarSession:
             s.agora_egress.token = ag.token
             s.agora_egress.uid = ag.uid
             s.agora_egress.publisher_id = ag.publisher_id
+            s.agora_egress.source_timeline_only = ag.source_timeline_only
+            s.agora_egress.source_playback_profile = ag.source_playback_profile
 
         try:
             await self._connection.send(msg.SerializeToString())
@@ -280,10 +288,40 @@ class AvatarSession:
             # Forward-compatible: the field lands with server-side playback
             # control; older protos simply don't have it.
             self._capabilities = tuple(getattr(confirm, "capabilities", ()) or ())
+            if (
+                self._config.agora_egress is not None
+                and self._config.agora_egress.source_timeline_only
+                and _SOURCE_TIMELINE_CAPABILITY not in self._capabilities
+            ):
+                raise UnsupportedConfigurationError(
+                    "Server did not accept the requested Agora source-timeline-only mode",
+                    connection_id=confirm.connection_id,
+                )
+            if (
+                self._config.agora_egress is not None
+                and self._config.agora_egress.source_playback_profile
+                and _SOURCE_BURST_CAPABILITY not in self._capabilities
+            ):
+                raise UnsupportedConfigurationError(
+                    "Server did not accept the requested Agora source playback profile",
+                    connection_id=confirm.connection_id,
+                )
             return confirm.connection_id
 
         if envelope.type == message_pb2.MESSAGE_SERVER_ERROR:
-            raise _server_error(envelope.server_error, phase="websocket_handshake")
+            error = _server_error(envelope.server_error, phase="websocket_handshake")
+            if (
+                self._config.agora_egress is not None
+                and self._config.agora_egress.source_timeline_only
+                and error.close_code is None
+            ):
+                try:
+                    await asyncio.wait_for(self._connection.wait_closed(), timeout=CONFIGURE_CLOSE_GRACE_SECONDS)
+                except asyncio.TimeoutError:
+                    pass
+                else:
+                    error.close_code = self._connection.close_code
+            raise error
 
         raise AvatarSDKError(
             code=AvatarSDKErrorCode.protocolError,

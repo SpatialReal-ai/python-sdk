@@ -31,6 +31,31 @@ await session.interrupt()  # interrupts the latest request
 await session.close()
 ```
 
+### Agora source-timeline-only viewers
+
+Set `AgoraEgressConfig(source_timeline_only=True, ...)` only when every viewer
+plays the source-timeline audio and manages its own entry transition. The default
+is `False`, which retains the existing RTC delivery policy. This setting does not
+change input sample rates or audio data.
+
+`start()` requires the server's `agora_source_timeline_only` capability when this
+mode is requested. A confirmation without it raises `UnsupportedConfigurationError`
+(`protocolError`, `websocket_handshake`, not retryable) and closes the connection
+before audio is sent. A standard WebSocket policy rejection (`1008`) is also not
+retryable. Other transport failures retain their normal retry behavior.
+
+For the coordinated bounded-burst profile, also set
+`source_playback_profile=RtcSourcePlaybackProfile.BOUNDED_BURST_V1` (import the
+enum from `spatialreal`). It requires `source_timeline_only=True` and both
+`agora_source_timeline_only` and `agora_source_burst_v1` in the server's actual
+confirmation. `session.capabilities` is the read-only tuple from that handshake.
+Missing acceptance closes the connection before the read loop or audio starts;
+there is no silent fallback. The default `UNSPECIFIED`/0 is omitted on the wire
+and retains existing behavior. Unknown values and booleans are rejected.
+
+Every animation viewer must independently opt into the same profile using a
+compatible viewer SDK; the publisher's handshake cannot negotiate room viewers.
+
 ### Pause / resume (egress mode)
 
 When the server declares the `playback_control` capability, the current
