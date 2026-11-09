@@ -206,10 +206,9 @@ async def test_start_rejected_by_server_error():
         assert session._connection is None  # cleaned up
 
 
-@pytest.mark.parametrize("explicit_false", [False, True])
-async def test_agora_source_timeline_default_preserves_legacy_handshake(explicit_false):
+async def test_agora_source_timeline_explicit_false_preserves_legacy_handshake():
     async with FakeBackend() as backend:
-        options = {"source_timeline_only": False} if explicit_false else {}
+        options = {"source_timeline_only": False}
         session = make_session(backend, agora_egress=AgoraEgressConfig(channel_name="room", **options))
         await session.init()
         assert await session.start() == "conn-1"
@@ -222,7 +221,10 @@ async def test_agora_source_timeline_default_preserves_legacy_handshake(explicit
 async def test_agora_source_timeline_requires_matching_server_confirmation():
     async with FakeBackend() as backend:
         backend.capabilities = ["agora_source_timeline_only"]
-        session = make_session(backend, agora_egress=AgoraEgressConfig(channel_name="room", source_timeline_only=True))
+        session = make_session(
+            backend,
+            agora_egress=AgoraEgressConfig(channel_name="room", source_timeline_only=True, source_playback_profile=0),
+        )
         await session.init()
         assert await session.start() == "conn-1"
         config = backend.configure.agora_egress
