@@ -55,10 +55,6 @@ and retains existing behavior. Unknown values and booleans are rejected.
 
 Every animation viewer must independently opt into the same profile using a
 compatible viewer SDK; the publisher's handshake cannot negotiate room viewers.
-The profile contract is not released yet. Generated types are a local bridge
-from the authored shared-proto change; merge and tag propagation remain pending.
-See [the code-generation receipt](docs/source-burst-codegen.json). No PyPI release
-or deployment is implied by this change.
 
 ### Pause / resume (egress mode)
 
