@@ -33,6 +33,11 @@ class EgressType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     EGRESS_TYPE_UNSPECIFIED: _ClassVar[EgressType]
     EGRESS_TYPE_LIVEKIT: _ClassVar[EgressType]
     EGRESS_TYPE_AGORA: _ClassVar[EgressType]
+
+class RtcSourcePlaybackProfile(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    RTC_SOURCE_PLAYBACK_PROFILE_UNSPECIFIED: _ClassVar[RtcSourcePlaybackProfile]
+    RTC_SOURCE_PLAYBACK_PROFILE_BOUNDED_BURST_V1: _ClassVar[RtcSourcePlaybackProfile]
 MESSAGE_UNSPECIFIED: MessageType
 MESSAGE_CLIENT_CONFIGURE_SESSION: MessageType
 MESSAGE_SERVER_CONFIRM_SESSION: MessageType
@@ -49,6 +54,8 @@ TRANSPORT_COMPRESSION_NONE: TransportCompression
 EGRESS_TYPE_UNSPECIFIED: EgressType
 EGRESS_TYPE_LIVEKIT: EgressType
 EGRESS_TYPE_AGORA: EgressType
+RTC_SOURCE_PLAYBACK_PROFILE_UNSPECIFIED: RtcSourcePlaybackProfile
+RTC_SOURCE_PLAYBACK_PROFILE_BOUNDED_BURST_V1: RtcSourcePlaybackProfile
 
 class LiveKitEgressConfig(_message.Message):
     __slots__ = ("url", "api_key", "api_secret", "room_name", "publisher_id", "extra_attributes", "idle_timeout", "api_token")
@@ -78,18 +85,20 @@ class LiveKitEgressConfig(_message.Message):
     def __init__(self, url: _Optional[str] = ..., api_key: _Optional[str] = ..., api_secret: _Optional[str] = ..., room_name: _Optional[str] = ..., publisher_id: _Optional[str] = ..., extra_attributes: _Optional[_Mapping[str, str]] = ..., idle_timeout: _Optional[int] = ..., api_token: _Optional[str] = ...) -> None: ...
 
 class AgoraEgressConfig(_message.Message):
-    __slots__ = ("channel_name", "token", "uid", "publisher_id", "source_timeline_only")
+    __slots__ = ("channel_name", "token", "uid", "publisher_id", "source_timeline_only", "source_playback_profile")
     CHANNEL_NAME_FIELD_NUMBER: _ClassVar[int]
     TOKEN_FIELD_NUMBER: _ClassVar[int]
     UID_FIELD_NUMBER: _ClassVar[int]
     PUBLISHER_ID_FIELD_NUMBER: _ClassVar[int]
     SOURCE_TIMELINE_ONLY_FIELD_NUMBER: _ClassVar[int]
+    SOURCE_PLAYBACK_PROFILE_FIELD_NUMBER: _ClassVar[int]
     channel_name: str
     token: str
     uid: int
     publisher_id: str
     source_timeline_only: bool
-    def __init__(self, channel_name: _Optional[str] = ..., token: _Optional[str] = ..., uid: _Optional[int] = ..., publisher_id: _Optional[str] = ..., source_timeline_only: bool = ...) -> None: ...
+    source_playback_profile: RtcSourcePlaybackProfile
+    def __init__(self, channel_name: _Optional[str] = ..., token: _Optional[str] = ..., uid: _Optional[int] = ..., publisher_id: _Optional[str] = ..., source_timeline_only: bool = ..., source_playback_profile: _Optional[_Union[RtcSourcePlaybackProfile, str]] = ...) -> None: ...
 
 class ClientConfigureSession(_message.Message):
     __slots__ = ("sample_rate", "bitrate", "audio_format", "transport_compression", "egress_type", "livekit_egress", "agora_egress")
