@@ -94,6 +94,12 @@ implements the server's WebSocket close-code contract (40xx: don't retry,
 
 ## What's new
 
+- 0.3.0: Agora source playback negotiation. `AgoraEgressConfig(source_timeline_only=True)`
+  requests source-timeline-only playback; `source_playback_profile=RtcSourcePlaybackProfile.BOUNDED_BURST_V1`
+  requests the bounded source playback profile. `start()` refuses the session
+  (`UnsupportedConfigurationError`, not retryable) before any audio is sent when the
+  server does not confirm the matching capabilities (`agora_source_timeline_only`,
+  `agora_source_burst_v1`). Defaults are unchanged.
 - 0.2.3: `app_id` is optional (the API key identifies the app); protobuf floor lowered
   to 5.29 so the SDK installs next to packages that pin protobuf 5.x (TEN Framework agents).
 - `on_playback(PlaybackSignal)` — structured playback lifecycle; no protobuf
