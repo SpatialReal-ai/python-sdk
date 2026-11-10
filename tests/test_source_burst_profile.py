@@ -13,9 +13,9 @@ CAPABILITIES = ["agora_source_timeline_only", "agora_source_burst_v1"]
 
 
 @pytest.mark.parametrize("explicit", [False, True])
-async def test_burst_default_zero_omitted_on_wire(explicit):
+async def test_explicit_legacy_zero_omitted_on_wire(explicit):
     async with FakeBackend() as backend:
-        options = {"source_playback_profile": 0} if explicit else {}
+        options = {"source_timeline_only": False, **({"source_playback_profile": 0} if explicit else {})}
         session = make_session(backend, agora_egress=AgoraEgressConfig(**options))
         await session.init()
         await session.start()
@@ -24,12 +24,13 @@ async def test_burst_default_zero_omitted_on_wire(explicit):
         await session.close()
 
 
-async def test_burst_profile_is_typed_and_requires_actual_dual_ack():
+@pytest.mark.parametrize("explicit", [False, True])
+async def test_burst_default_and_explicit_profile_require_actual_dual_ack(explicit):
     from spatialreal import RtcSourcePlaybackProfile
 
     async with FakeBackend() as backend:
         backend.capabilities = CAPABILITIES
-        config = AgoraEgressConfig(source_timeline_only=True, source_playback_profile=1)
+        config = AgoraEgressConfig(**({"source_timeline_only": True, "source_playback_profile": 1} if explicit else {}))
         assert config.source_playback_profile is RtcSourcePlaybackProfile.BOUNDED_BURST_V1
         session = make_session(backend, agora_egress=config)
         await session.init()
@@ -45,7 +46,8 @@ async def test_burst_profile_is_typed_and_requires_actual_dual_ack():
 
 
 @pytest.mark.parametrize("capabilities", [[], CAPABILITIES[:1], CAPABILITIES[1:], ["playback_control"]])
-async def test_burst_missing_ack_closes_before_read_loop_or_audio(capabilities):
+@pytest.mark.parametrize("explicit", [False, True])
+async def test_burst_missing_ack_closes_before_read_loop_or_audio(capabilities, explicit):
     async with FakeBackend() as backend:
         backend.capabilities = capabilities
         closed = asyncio.Event()
@@ -56,7 +58,10 @@ async def test_burst_missing_ack_closes_before_read_loop_or_audio(capabilities):
 
         backend.script = observe_close
         session = make_session(
-            backend, agora_egress=AgoraEgressConfig(source_timeline_only=True, source_playback_profile=1)
+            backend,
+            agora_egress=AgoraEgressConfig(
+                **({"source_timeline_only": True, "source_playback_profile": 1} if explicit else {})
+            ),
         )
         await session.init()
         with pytest.raises(UnsupportedConfigurationError) as caught:
@@ -70,7 +75,7 @@ async def test_burst_missing_ack_closes_before_read_loop_or_audio(capabilities):
         assert backend.received == []
 
 
-@pytest.mark.parametrize("value", [True, False, -1, 2, 999, "1", 1.0, None, {}, []])
+@pytest.mark.parametrize("value", [True, False, -1, 2, 999, "1", 1.0, {}, []])
 def test_burst_rejects_unknown_or_untyped_profile(value):
     with pytest.raises(ValueError, match="source_playback_profile"):
         AgoraEgressConfig(source_timeline_only=True, source_playback_profile=value)
@@ -78,7 +83,7 @@ def test_burst_rejects_unknown_or_untyped_profile(value):
 
 def test_burst_requires_source_timeline_only():
     with pytest.raises(ValueError, match="source_timeline_only"):
-        AgoraEgressConfig(source_playback_profile=1)
+        AgoraEgressConfig(source_timeline_only=False, source_playback_profile=1)
 
 
 @pytest.mark.parametrize("close_code, retryable", [(1008, False), (int(CloseCode.UPSTREAM_UNAVAILABLE), True)])

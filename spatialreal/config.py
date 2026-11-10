@@ -13,7 +13,7 @@ from .proto.generated import message_pb2
 
 
 class RtcSourcePlaybackProfile(IntEnum):
-    """Explicit source playback contract; independent RTC viewers must also opt in."""
+    """Source playback contract; current Web SDK viewers detect it automatically."""
 
     UNSPECIFIED = message_pb2.RTC_SOURCE_PLAYBACK_PROFILE_UNSPECIFIED
     BOUNDED_BURST_V1 = message_pb2.RTC_SOURCE_PLAYBACK_PROFILE_BOUNDED_BURST_V1
@@ -60,14 +60,22 @@ class AgoraEgressConfig:
     token: str = field(default="", repr=False)
     uid: int = 0
     publisher_id: str = ""
-    # Only for viewers that play source-timeline audio and manage entry locally.
-    # The server must explicitly acknowledge this mode during the handshake.
-    source_timeline_only: bool = False
-    source_playback_profile: RtcSourcePlaybackProfile = RtcSourcePlaybackProfile.UNSPECIFIED
+    # Current viewers play source-timeline audio and manage entry locally.
+    # The server must explicitly acknowledge both capabilities before start.
+    # Set source_timeline_only=False for legacy/native-audio viewers.
+    source_timeline_only: bool = True
+    # None selects burst with source-only, otherwise the compatibility profile.
+    source_playback_profile: RtcSourcePlaybackProfile | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.source_timeline_only, bool):
             raise ValueError("source_timeline_only must be a boolean")
+        if self.source_playback_profile is None:
+            self.source_playback_profile = (
+                RtcSourcePlaybackProfile.BOUNDED_BURST_V1
+                if self.source_timeline_only
+                else RtcSourcePlaybackProfile.UNSPECIFIED
+            )
         if isinstance(self.source_playback_profile, bool) or not isinstance(self.source_playback_profile, int):
             raise ValueError("source_playback_profile must be a known RtcSourcePlaybackProfile")
         try:

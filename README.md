@@ -31,30 +31,33 @@ await session.interrupt()  # interrupts the latest request
 await session.close()
 ```
 
-### Agora source-timeline-only viewers
+### Agora playback defaults
 
-Set `AgoraEgressConfig(source_timeline_only=True, ...)` only when every viewer
-plays the source-timeline audio and manages its own entry transition. The default
-is `False`, which retains the existing RTC delivery policy. This setting does not
-change input sample rates or audio data.
+`AgoraEgressConfig(channel_name=..., token=..., uid=...)` defaults to
+`source_timeline_only=True` and `BOUNDED_BURST_V1`. Current SpatialReal Web SDK
+viewers detect this profile from the actual media, so no playback flags are
+needed on either side. Audio input formats and sample rates are unchanged.
 
-`start()` requires the server's `agora_source_timeline_only` capability when this
-mode is requested. A confirmation without it raises `UnsupportedConfigurationError`
-(`protocolError`, `websocket_handshake`, not retryable) and closes the connection
-before audio is sent. A standard WebSocket policy rejection (`1008`) is also not
-retryable. Other transport failures retain their normal retry behavior.
+Before sending audio, `start()` requires both `agora_source_timeline_only` and
+`agora_source_burst_v1` in the server's actual confirmation. Missing acceptance
+raises `UnsupportedConfigurationError` (`protocolError`, `websocket_handshake`,
+not retryable) and closes the connection. Policy rejection (`1008`) is also not
+retryable; ordinary transport failures retain their existing retry policy.
+`session.capabilities` is the read-only tuple from the handshake.
 
-For the coordinated bounded-burst profile, also set
-`source_playback_profile=RtcSourcePlaybackProfile.BOUNDED_BURST_V1` (import the
-enum from `spatialreal`). It requires `source_timeline_only=True` and both
-`agora_source_timeline_only` and `agora_source_burst_v1` in the server's actual
-confirmation. `session.capabilities` is the read-only tuple from that handshake.
-Missing acceptance closes the connection before the read loop or audio starts;
-there is no silent fallback. The default `UNSPECIFIED`/0 is omitted on the wire
-and retains existing behavior. Unknown values and booleans are rejected.
+For older viewers that require native audio, explicitly set
+`source_timeline_only=False`; the omitted profile then resolves to
+`RtcSourcePlaybackProfile.UNSPECIFIED`/0. An explicit `source_playback_profile=0`
+with source-only enabled preserves the earlier source-only contract. `None`
+selects the profile from `source_timeline_only`; booleans and unknown profile
+values are rejected. Burst with source-only disabled is invalid.
 
-Every animation viewer must independently opt into the same profile using a
-compatible viewer SDK; the publisher's handshake cannot negotiate room viewers.
+This changes the default for Agora publishers and requires a compatible server
+and viewer SDK. The publisher handshake cannot discover or upgrade room viewers.
+An incompatible server fails explicitly rather than silently falling back. Use a
+Web SDK build with automatic profile detection, or explicitly configure
+`agora.sourcePlaybackProfile: "bounded-burst-v1"` on Web SDK 1.0.0-beta.6.
+Upgrading the publisher alone does not upgrade existing viewers.
 
 ### Pause / resume (egress mode)
 
@@ -94,6 +97,9 @@ implements the server's WebSocket close-code contract (40xx: don't retry,
 
 ## What's new
 
+- Unreleased: Agora publishers default to source-only bounded burst. Set
+  `source_timeline_only=False` for older/native-audio viewers; the omitted profile
+  then resolves to zero. Server capability checks remain mandatory.
 - 0.3.0: Agora source playback negotiation. `AgoraEgressConfig(source_timeline_only=True)`
   requests source-timeline-only playback; `source_playback_profile=RtcSourcePlaybackProfile.BOUNDED_BURST_V1`
   requests the bounded source playback profile. `start()` refuses the session
