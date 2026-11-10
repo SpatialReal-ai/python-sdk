@@ -97,9 +97,13 @@ implements the server's WebSocket close-code contract (40xx: don't retry,
 
 ## What's new
 
-- Unreleased: Agora publishers default to source-only bounded burst. Set
-  `source_timeline_only=False` for older/native-audio viewers; the omitted profile
-  then resolves to zero. Server capability checks remain mandatory.
+- 0.4.0: **Behaviour change** — the Agora publisher default is now source-timeline-only
+  playback with the bounded burst profile: a plain `AgoraEgressConfig(channel_name=..., token=..., uid=...)`
+  requests `source_timeline_only=True` and `BOUNDED_BURST_V1`. Viewers need a Web SDK with
+  automatic profile detection (1.0.0-beta.7+), or must set
+  `agora.sourcePlaybackProfile: 'bounded-burst-v1'` explicitly on 1.0.0-beta.6. Pass
+  `source_timeline_only=False` for compatibility mode (older/native-audio viewers); the
+  omitted profile then resolves to zero. Server capability checks remain mandatory.
 - 0.3.0: Agora source playback negotiation. `AgoraEgressConfig(source_timeline_only=True)`
   requests source-timeline-only playback; `source_playback_profile=RtcSourcePlaybackProfile.BOUNDED_BURST_V1`
   requests the bounded source playback profile. `start()` refuses the session
